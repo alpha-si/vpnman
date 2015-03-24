@@ -1,0 +1,48 @@
+# server port
+port %SRV_PORT%
+
+# server protocol
+proto %PROTO_TYPE%
+
+# device type
+dev tun
+
+# server cerificate
+ca %CA_CRT_FILE%
+cert %CRT_FILE%
+key %KEY_FILE%
+dh %DH_FILE%
+
+# username are used as client name
+#username-as-common-name
+
+# VPN network address
+server %NET_ADDR% %NET_MASK%
+
+# save the IP assigned to client for reuse
+ifconfig-pool-persist %VPN_HOME_DIR%/ipp.txt
+
+# permits client-to-client connection 
+client-to-client
+
+# if client dead, the timeout are used for update connection status on DB
+keepalive 5 11
+
+# conpression enabled
+comp-lzo
+
+persist-key
+persist-tun
+
+# log verbosity
+verb 2
+mute 10
+
+# enable management interface
+management localhost %SRV_PORT%
+management-client-auth
+
+# start OpenVPN server manager
+script-security 2
+up script_up.sh
+down script_down.sh

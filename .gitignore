@@ -1,0 +1,7 @@
+frontend/config.inc.php
+*.d
+ovpnctrl/ovpnctrl
+vpn/vpn*/
+vpn/**/*.key
+vpn/**/*.crt
+vpn/**/*.csr

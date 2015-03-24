@@ -1,0 +1,4 @@
+#! /bin/bash
+
+/sbin/iptables -D allow_vpn -p %PROTO_TYPE% --dport %SRV_PORT% -j ACCEPT
+

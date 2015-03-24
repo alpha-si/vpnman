@@ -1,0 +1,15 @@
+body {  background: #ddd; }
+body, #gmap-4, .page { height:100%; }
+.ui-body-c a.ui-link { color: #008595; font-weight: bold; text-decoration: none; }
+.hidden { display:none; }
+.min-width-480px label.ui-input-text { font-weight:bold; display: block; }
+.adp-directions { width:100%; }
+.adp-placemark, .adp-summary, .adp-legal { display:none; margin: 0; }
+.adp-placemark, .adp-step, .adp-stepicon, .adp-substep{ border-top: none;text-align:center; vertical-align: middle; padding: 0.8em 0; background:#e9eaeb;color:#3e3e3e;text-shadow:0 1px 1px #fff;background-image:-moz-linear-gradient(top,#f0f0f0,#e9eaeb);background-image:-webkit-gradient(linear,left top,left bottom,color-stop(0,#f0f0f0),color-stop(1,#e9eaeb));-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorStr='#f0f0f0', EndColorStr='#e9eaeb')"}
+.adp-directions tr { border:1px solid #b3b3b3; }
+h2 { font-size: 16px; overflow: hidden; white-space: nowrap; display: block; }
+.more { text-align: center; }
+.clear { clear:both; }
+#control { width:100%; background: #f4f4f4; opacity: 0.9}
+#control div { margin: 0em 0 1em 0; }
+#control input#places { width:95%; }

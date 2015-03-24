@@ -1,0 +1,4 @@
+#! /bin/bash
+%VPN_ROOT_PATH%bin/ovpnctrl %VPN_HOME_DIR%/ovpnctrl.conf >/dev/null 2>&1 &
+/sbin/iptables -A allow_vpn -p %PROTO_TYPE% --dport %SRV_PORT% -j ACCEPT
+

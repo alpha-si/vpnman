@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+   <head>
+		<title>Example with Google maps and filtering - Google maps jQuery plugin</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta http-equiv="content-language" content="en" />
+		<meta name="author" content="Johan Säll Larsson" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="keywords" content="Google maps, jQuery, plugin, filtering" />
+		<meta name="description" content="An example how to filter markers by different criterias" />
+		<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+		<meta name="DC.title" content="Example with Google maps and filtering - Google maps jQuery plugin" />
+		<meta name="DC.subject" content="Google maps;jQuery;plugin;filtering" />
+		<meta name="DC.description" content="An example how to filter markers by different criterias" />
+		<meta name="DC.creator" content="Johan Säll Larsson" />
+		<meta name="DC.language" content="en" />
+		<link type="text/css" rel="stylesheet" href="css/960/min/960.css" />
+		<link type="text/css" rel="stylesheet" href="css/960/min/960_16_col.css" />
+		<link type="text/css" rel="stylesheet" href="css/normalize/min/normalize.css" />
+		<link type="text/css" rel="stylesheet" href="css/prettify/min/prettify.css" />
+		<link type="text/css" rel="stylesheet" href="css/style.css" />
+		<script type="text/javascript" src="js/modernizr-2.0.6/modernizr.min.js"></script>
+    </head>
+    <body>
+		<header class="dark">
+			<div class="container_16">
+				<h1><a href="/">Google maps jQuery plugin  <span id="version"></span></a> filter by property</h1>
+			</div>
+		</header>
+		<div class="container_16">
+			<article class="grid_16">
+				<div class="item rounded dark">
+					<div id="map_canvas" class="map rounded"></div>
+				</div>
+				<div id="radios" class="item gradient rounded shadow" style="margin:5px;padding:5px 5px 5px 10px;"></div>
+				<!--<div id="tags-control" class="item gradient rounded shadow" style="margin:5px;padding:5px 5px 5px 10px;">
+					<label style="color:#555;font-size:12px; font-weight:bold;" for="tags">Filter by tag</label>
+					<select id="tags" style="outline:none;"></select>
+				</div>-->
+				<div class="content rounded light shadow">
+					<h2>Using jquery with Google maps</h2>
+					<p>Download <a href="http://jquery.com/">jQuery 1.4.X or higher</a> or use <a href="http://code.google.com/intl/sv-SE/apis/libraries/devguide.html">Googles</a> or <a href="http://www.asp.net/ajaxlibrary/cdn.ashx">Microsofts</a>  <abbr title="Content delivery network"><a href="http://en.wikipedia.org/wiki/Content_delivery_network">CDN</a></abbr>.</p>
+<pre class="prettyprint rounded">
+&lt;script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="PATH_TO_PLUGIN/jquery.ui.map.js"&gt;&lt;/script&gt;</pre>
+
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap({'center': '59.3426606750, 18.0736160278' }).bind('init', function () {
+	$('#map_canvas').gmap('addMarker', { 'foo': 'bar', 'position': '59.3426606750, 18.0736160278' });
+	$('#map_canvas').gmap('addMarker', { 'foo': 'baz', 'position': '58.3426606750, 18.0736160278' });
+	$('#map_canvas').gmap('find', 'markers', { 'property': 'foo', 'value': 'bar' }, function(marker, found) {
+		marker.setVisible(found);
+	});
+});</pre>
+
+<p>The find method is n-n, meaning it can find a multiple value within a array. If you need both values (bar and boz) to be included add the property 'operator':'AND'</p>
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap({'center': '59.3426606750, 18.0736160278' }).bind('init', function () {
+	$('#map_canvas').gmap('addMarker', { 'foo': 'bar,baz,boz', 'position': '59.3426606750, 18.0736160278' });
+	$('#map_canvas').gmap('find', 'markers', { 'property': 'foo', 'value': ['bar','boz'] }, function(marker, found) {
+		marker.setVisible(found);
+	});
+});</pre>
+
+<p>If you need to know whether or not a markers position is visible in viewport, use can use the inViewport method.</p>
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap('addMarker', { 'id': 'some_id', 'position': '58.3426606750, 18.0736160278' });
+$('#map_canvas').gmap('inViewport', $('#map_canvas').gmap('get', 'marker > some_id'));</pre>
+
+					<p>There are many ways of writing this snippet, please refer to the <a href="http://code.google.com/p/jquery-ui-map/wiki/jquery_ui_map_v_3_sample_code">sample code</a> section in the wiki.</p>
+				</div>
+			</article>
+		</div>
+		<footer class="dark">
+			<div class="container_16">
+				<div class="grid_8">
+					<h2>More Google maps and jQuery examples</h2>
+					<ul>
+						<li><a href="jquery-google-maps-basic-example.html">Google maps and jQuery basics</a></li>
+						<li><a href="jquery-google-maps-geolocation.html">Google maps with geolocation</a></li>
+						<li><a href="jquery-google-maps-clustering.html">Using clusters with MarkerClusteredPlus</a></li>
+						<li><a href="jquery-google-maps-streetview.html">Microformats, Google streetview and jQuery dialog</a></li>
+						<li><a href="jquery-google-maps-geocoding.html">Click and drag events with Google geo search</a></li>
+						<li><a href="jquery-google-maps-json.html">Show markers from JSON</a></li>
+						<li><a href="jquery-google-maps-microdata.html">Show markers with microdata</a></li>
+						<li><a href="jquery-google-maps-microformat.html">Show markers with microformats</a></li>
+						<li><a href="jquery-google-maps-rdfa.html">Show markers with RDFa</a></li>
+						<li><a href="jquery-google-maps-fusion-tables.html">Show markers from Google Fusion tables</a></li>
+						<li class="sel buttonize"><a href="jquery-google-maps-filtering.html">Filter markers by property</a></li>
+						<li><a href="jquery-google-maps-mobile.html">Google maps with <strong>jQuery mobile</strong></a></li>
+					</ul>
+				</div>
+				<div id="forum" class="hidden rounded forum grid_8"></div>
+				<div class="grid_16" itemscope itemtype="http://data-vocabulary.org/Person">
+					Author: <span itemprop="name">Johan S&auml;ll Larsson</span> (<a href="http://johansalllarsson.se" itemprop="url">http://johansalllarsson.se</a>)
+				</div>
+			</div>
+		</footer>
+		
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script> 
+		<script type="text/javascript" src="js/jquery-1.7.1/jquery.min.js"></script>
+		<script type="text/javascript" src="js/underscore-1.2.2/underscore.min.js"></script>
+		<script type="text/javascript" src="js/backbone-0.5.3/backbone.min.js"></script>
+		<script type="text/javascript" src="js/prettify/prettify.min.js"></script>
+		<script type="text/javascript" src="js/demo.js"></script>
+		<script type="text/javascript" src="../ui/jquery.ui.map.js"></script>
+		<script type="text/javascript">
+            $(function() { 
+				demo.add(function() {			
+					$('#map_canvas').gmap({'disableDefaultUI':true}).bind('init', function(evt, map) { 
+						//$('#map_canvas').gmap('addControl', 'tags-control', google.maps.ControlPosition.TOP_LEFT);
+						$('#map_canvas').gmap('addControl', 'radios', google.maps.ControlPosition.TOP_LEFT);
+						var southWest = map.getBounds().getSouthWest();
+						var northEast = map.getBounds().getNorthEast();
+						var lngSpan = northEast.lng() - southWest.lng();
+						var latSpan = northEast.lat() - southWest.lat();
+						var images = ['http://google-maps-icons.googlecode.com/files/friends.png', 'http://google-maps-icons.googlecode.com/files/home.png', 'http://google-maps-icons.googlecode.com/files/girlfriend.png', 'http://google-maps-icons.googlecode.com/files/dates.png', 'http://google-maps-icons.googlecode.com/files/realestate.png', 'http://google-maps-icons.googlecode.com/files/apartment.png', 'http://google-maps-icons.googlecode.com/files/family.png'];
+						var tags = ['jQuery', 'Google maps', 'Plugin', 'SEO', 'Java', 'PHP', 'C#', 'Ruby', 'JavaScript', 'HTML'];
+						//$('#tags').append('<option value="all">All</option>');
+						$.each(tags, function(i, tag) {
+							//$('#tags').append(('<option value="{0}">{1}</option>').format(tag, tag));
+							$('#radios').append(('<label style="margin-right:5px;display:block;"><input type="checkbox" style="margin-right:3px" value="{0}"/>{1}</label>').format(tag, tag));
+						});
+						for ( i = 0; i < 100; i++ ) {
+							var temp = [];
+							for ( j = 0; j < Math.random()*5; j++ ) {
+								temp.push(tags[Math.floor(Math.random()*10)]);
+							}
+							$('#map_canvas').gmap('addMarker', { 'icon': images[(Math.floor(Math.random()*7))], 'tags':temp, 'bound':true, 'position': new google.maps.LatLng(southWest.lat() + latSpan * Math.random(), southWest.lng() + lngSpan * Math.random()) } ).click(function() {
+								var visibleInViewport = ( $('#map_canvas').gmap('inViewport', $(this)[0]) ) ? 'I\'m visible in the viewport.' : 'I\'m sad and hidden.';
+								$('#map_canvas').gmap('openInfoWindow', { 'content': $(this)[0].tags + '<br/>' +visibleInViewport }, this);
+							});
+						}
+						$('input:checkbox').click(function() {
+							$('#map_canvas').gmap('closeInfoWindow');
+							$('#map_canvas').gmap('set', 'bounds', null);
+							var filters = [];
+							$('input:checkbox:checked').each(function(i, checkbox) {
+								filters.push($(checkbox).val());
+							});
+							if ( filters.length > 0 ) {
+								$('#map_canvas').gmap('find', 'markers', { 'property': 'tags', 'value': filters, 'operator': 'OR' }, function(marker, found) {
+									if (found) {
+										$('#map_canvas').gmap('addBounds', marker.position);
+									}
+									marker.setVisible(found); 
+								});
+							} else {
+								$.each($('#map_canvas').gmap('get', 'markers'), function(i, marker) {
+									$('#map_canvas').gmap('addBounds', marker.position);
+									marker.setVisible(true); 
+								});
+							}
+						});
+						
+						/*$("#tags").change(function() {
+							$('#map_canvas').gmap('closeInfoWindow');
+							$('#map_canvas').gmap('set', 'bounds', null);
+							if ( $(this).val() == 'all' ) {
+								$.each($('#map_canvas').gmap('get', 'markers'), function(i, marker) {
+									marker.setVisible(true); 
+								});
+							} else {
+								$('#map_canvas').gmap('find', 'markers', { 'property': 'tags', 'value': $(this).val() }, function(marker, found) {
+									if (found) {
+										$('#map_canvas').gmap('addBounds', marker.position);
+									}
+									marker.setVisible(found); 
+								});
+							}
+						});*/
+					});
+				}).load();
+			});
+        </script>
+    
+	</body>
+</html>

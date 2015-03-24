@@ -1,0 +1,181 @@
+<!doctype html> 
+<html lang="en">
+   <head>
+		<title>Example with click, drag events with geo search - Google maps jQuery plugin</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta http-equiv="content-language" content="en" />
+		<meta name="author" content="Johan Säll Larsson" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="keywords" content="Google maps, jQuery, plugin, geo search" />
+		<meta name="description" content="An example with click and drag events, geo localization and geo search using jQuery and Google maps v3" />
+		<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+		<meta name="DC.title" content="Example with click, drag events with geo search - Google maps jQuery plugin" />
+		<meta name="DC.subject" content="Google maps;jQuery;plugin;geo search" />
+		<meta name="DC.description" content="An example with click and drag events, geo localization and geo search using jQuery and Google maps v3" />
+		<meta name="DC.creator" content="Johan Säll Larsson" />
+		<meta name="DC.language" content="en" />
+		
+		<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/ui-lightness/jquery-ui.css" />
+		<link type="text/css" rel="stylesheet" href="css/960/min/960.css" />
+		<link type="text/css" rel="stylesheet" href="css/960/min/960_16_col.css" />
+		<link type="text/css" rel="stylesheet" href="css/normalize/min/normalize.css" />
+		<link type="text/css" rel="stylesheet" href="css/prettify/min/prettify.css" />
+		<link type="text/css" rel="stylesheet" href="css/style.css" />
+		<script type="text/javascript" src="js/modernizr-2.0.6/modernizr.min.js"></script>
+    </head>
+    <body>
+		<header class="dark">
+			<div class="container_16">
+				<h1><a href="/">Google maps jQuery plugin <span id="version"></span></a> geo search example</h1>
+			</div>
+		</header>
+		<div class="container_16">
+			<article class="grid_16">
+				<div class="item rounded dark">
+					<div id="map_canvas" class="map rounded"></div>
+					<div id="dialog"></div>
+				</div>
+				<div class="content rounded light shadow">
+					<h2>Using jquery with Google maps</h2>
+					<p>Download <a href="http://jquery.com/">jQuery 1.4.X or higher</a> or use <a href="http://code.google.com/intl/sv-SE/apis/libraries/devguide.html">Googles</a> or <a href="http://www.asp.net/ajaxlibrary/cdn.ashx">Microsofts</a>  <abbr title="Content delivery network"><a href="http://en.wikipedia.org/wiki/Content_delivery_network">CDN</a></abbr>.</p>
+					<pre class="prettyprint rounded">
+&lt;script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="PATH_TO_PLUGIN/jquery.ui.map.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="PATH_TO_PLUGIN/jquery.ui.map.services.js"&gt;&lt;/script&gt;</pre>
+
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap().bind('init', function(event, map) { 
+	$(map).click( function(event) {
+		$('#map_canvas').gmap('addMarker', {
+			'position': event.latLng, 
+			'draggable': true, 
+			'bounds': false
+		}, function(map, marker) {
+			$('#dialog').append('&lt;form id="dialog'+marker.__gm_id+'" method="get" action="/" style="display:none;"&gt;&lt;p&gt;&lt;label for="country"&gt;Country&lt;/label&gt;&lt;input id="country'+marker.__gm_id+'" class="txt" name="country" value=""/&gt;&lt;/p&gt;&lt;p&gt;&lt;label for="state"&gt;State&lt;/label&gt;&lt;input id="state'+marker.__gm_id+'" class="txt" name="state" value=""/&gt;&lt;/p&gt;&lt;p&gt;&lt;label for="address"&gt;Address&lt;/label&gt;&lt;input id="address'+marker.__gm_id+'" class="txt" name="address" value=""/&gt;&lt;/p&gt;&lt;p&gt;&lt;label for="comment"&gt;Comment&lt;/label&gt;&lt;textarea id="comment" class="txt" name="comment" cols="40" rows="5"&gt;&lt;/textarea&gt;&lt;/p&gt;&lt;/form&gt;');
+			findLocation(marker.getPosition(), marker);
+		}).dragend( function(event) {
+			findLocation(event.latLng, this);
+		}).click( function() {
+			openDialog(this);
+		})
+	});
+});
+
+function findLocation(location, marker) {
+	$('#map_canvas').gmap('search', {'location': location}, function(results, status) {
+		if ( status === 'OK' ) {
+			$.each(results[0].address_components, function(i,v) {
+				if ( v.types[0] == "administrative_area_level_1" || 
+					 v.types[0] == "administrative_area_level_2" ) {
+					$('#state'+marker.__gm_id).val(v.long_name);
+				} else if ( v.types[0] == "country") {
+					$('#country'+marker.__gm_id).val(v.long_name);
+				}
+			});
+			marker.setTitle(results[0].formatted_address);
+			$('#address'+marker.__gm_id).val(results[0].formatted_address);
+			openDialog(marker);
+		}
+	});
+}
+
+function openDialog(marker) {
+	$('#dialog'+marker.__gm_id).dialog({'modal':true, 'title': 'Edit and save point', 'buttons': { 
+		"Remove": function() {
+			$(this).dialog( "close" );
+			marker.setMap(null);
+		},
+		"Save": function() {
+			$(this).dialog( "close" );
+		}
+	}});
+}</pre>
+					
+					<p>There are many ways of writing this snippet, please refer to the <a href="http://code.google.com/p/jquery-ui-map/wiki/jquery_ui_map_v_3_sample_code">sample code</a> section in the wiki.</p>
+					<p>This example shows how to add markers to a map. Left click to add a marker. Left click on the marker to edit. Drag the marker if it's positioned wrong.</p>
+					<p class="credits">This example is inspired by <a href="http://webbfunktion.com/?id=7458">webbfunktion.com example</a>(<a href="http://translate.google.com/translate?hl=sv&amp;sl=sv&amp;tl=en&amp;u=http%3A%2F%2Fwebbfunktion.com%2F%3Fid%3D7458">translated</a>)</p>
+
+				</div>
+			</article>
+		</div>
+		<footer class="dark">
+			<div class="container_16">
+				<div class="grid_8">
+					<h2>More Google maps and jQuery examples</h2>
+					<ul>
+						<li><a href="jquery-google-maps-basic-example.html">Google maps and jQuery basics</a></li>
+						<li><a href="jquery-google-maps-geolocation.html">Google maps with geolocation</a></li>
+						<li><a href="jquery-google-maps-clustering.html">Using clusters with MarkerClusteredPlus</a></li>
+						<li><a href="jquery-google-maps-streetview.html">Microformats, Google streetview and jQuery dialog</a></li>
+						<li class="sel buttonize"><a href="jquery-google-maps-geocoding.html">Click and drag events with Google geo search</a></li>
+						<li><a href="jquery-google-maps-json.html">Show markers from JSON</a></li>
+						<li><a href="jquery-google-maps-microdata.html">Show markers with microdata</a></li>
+						<li><a href="jquery-google-maps-microformat.html">Show markers with microformats</a></li>
+						<li><a href="jquery-google-maps-rdfa.html">Show markers with RDFa</a></li>
+						<li><a href="jquery-google-maps-fusion-tables.html">Show markers from Google Fusion tables</a></li>
+						<li><a href="jquery-google-maps-filtering.html">Filter markers by property</a></li>
+						<li><a href="jquery-google-maps-mobile.html">Google maps with <strong>jQuery mobile</strong></a></li>
+					</ul>
+				</div>
+				<div id="forum" class="hidden rounded forum grid_8"></div>
+				<div class="grid_16" itemscope itemtype="http://data-vocabulary.org/Person">
+					Author: <span itemprop="name">Johan S&auml;ll Larsson</span> (<a href="http://johansalllarsson.se" itemprop="url">http://johansalllarsson.se</a>)
+				</div>
+			</div>
+		</footer>
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script> 
+		<script type="text/javascript" src="js/jquery-1.7.1/jquery.min.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="js/underscore-1.2.2/underscore.min.js"></script>
+		<script type="text/javascript" src="js/backbone-0.5.3/backbone.min.js"></script>
+		<script type="text/javascript" src="js/prettify/prettify.min.js"></script>
+		<script type="text/javascript" src="js/demo.js"></script>
+		<script type="text/javascript" src="../ui/jquery.ui.map.js"></script>
+		<script type="text/javascript" src="../ui/jquery.ui.map.services.js"></script>
+		<script type="text/javascript" src="../ui/jquery.ui.map.extensions.js"></script>
+		<script type="text/javascript">
+            $(function() { 
+				demo.add(function() {
+					$('#map_canvas').gmap({ 'disableDefaultUI':true, 'callback': function(map) {
+						var self = this;
+						self.set('openDialog', function(marker) {
+							$('#dialog'+marker.__gm_id).dialog({'modal':true, 'title': 'Edit and save point', 'buttons': { 
+								'Remove': function() { $(this).dialog('close'); marker.setMap(null); return false; },
+								'Save': function() { $(this).dialog('close'); return false; }
+							}});
+						});
+						self.set('findLocation', function(location, marker) {
+							self.search({'location': location}, function(results, status) {
+								if ( status === 'OK' ) {
+									$.each(results[0].address_components, function(i,v) {
+										if ( v.types[0] == "administrative_area_level_1" || v.types[0] == "administrative_area_level_2" ) {
+											$('#state'+marker.__gm_id).val(v.long_name);
+										} else if ( v.types[0] == "country") {
+											$('#country'+marker.__gm_id).val(v.long_name);
+										}
+									});
+									marker.setTitle(results[0].formatted_address);
+									$('#address'+marker.__gm_id).val(results[0].formatted_address);
+									self.get('openDialog')(marker);
+								}
+							});
+						});
+						$(map).click( function(event) {
+							self.addMarker({'position': event.latLng, 'draggable': true, 'bounds': false}, function(map, marker) {
+								$('#dialog').append('<form id="dialog'+marker.__gm_id+'" method="get" action="/" style="display:none;"><p><label for="country">Country</label><input id="country'+marker.__gm_id+'" class="txt" name="country" value=""/></p><p><label for="state">State</label><input id="state'+marker.__gm_id+'" class="txt" name="state" value=""/></p><p><label for="address">Address</label><input id="address'+marker.__gm_id+'" class="txt" name="address" value=""/></p><p><label for="comment">Comment</label><textarea id="comment" class="txt" name="comment" cols="40" rows="5"></textarea></p></form>');
+								self.get('findLocation')(marker.getPosition(), marker);
+							}).dragend( function(event) {
+								self.get('findLocation')(event.latLng, this);
+							}).click( function() {
+								self.get('openDialog')(this);
+							})
+						});
+					}});
+				}).load();
+			});
+        </script>
+    
+	</body>
+</html>

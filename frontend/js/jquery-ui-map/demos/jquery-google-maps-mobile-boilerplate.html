@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Boilerplate</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<link rel="stylesheet" href="http://code.jquery.com/mobile/latest/jquery.mobile.min.css" />
+		<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>
+		<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="http://code.jquery.com/mobile/latest/jquery.mobile.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="../ui/jquery.ui.map.js"></script>
+		<script type="text/javascript">
+			$(function() {
+				$('#map_canvas').gmap();
+			});
+		</script>
+	</head>
+	<body>
+		<div data-role="page" data-theme="a" data-add-back-btn="true">
+			<div data-role="header">
+				<h1>Title</h1>
+			</div>
+			<div data-role="content">
+				<div id="map_canvas" style="width:100%;height:250px"></div>
+			</div>
+			<div data-role="footer">
+				<p>Footer</p>
+			</div>
+		</div>
+	</body>
+</html>

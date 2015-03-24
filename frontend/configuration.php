@@ -1,0 +1,218 @@
+<?php
+	include("include/cfgmng.php");
+	
+   function show_configuration()
+   { 
+      global $DB;
+      
+      $query = $DB->query("SELECT * FROM config");
+   
+      while ($row = $query->fetch(PDO::FETCH_NUM))
+      {
+         $param_key = $row[0];
+         $param_value = $row[1];
+         $param_descr = $row[2];
+         
+         echo "<tr><td>$param_key</td><td><input type=\"text\" title=\"$param_descr\" size=\"50\" class=\"form-control\" name=\"$param_key\" value=\"$param_value\"></td></tr>";
+      }
+   }
+   
+   function save_config()
+   {
+      global $_REQUEST;
+      global $DB;
+
+      $modified = 0;
+      
+      foreach($_REQUEST as $param_key => $param_value)
+      {
+         $query = $DB->prepare("UPDATE config SET param_value = ? WHERE param_name = ?");
+         
+         $res = $query->execute(array($param_value, $param_key));
+         
+         if ($res && ($query->rowCount() > 0))
+         {
+            $modified++;
+         }
+      }
+      
+      echo("OK, Configuration Saved! (# $modified parameter changed)");
+   }
+   
+   if (isset($_REQUEST['action']) && ($_REQUEST['action'] == "saveConfig"))
+   {
+      save_config();
+      exit;
+   }
+?>
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>VPNMAN - VPN Management Platform</title>
+
+    <!-- Core CSS - Include with every page -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="font-awesome/css/font-awesome.css" rel="stylesheet">
+
+    <!-- Page-Level Plugin CSS - Dashboard -->
+    <link href="css/plugins/morris/morris-0.4.3.min.css" rel="stylesheet">
+
+    <!-- SB Admin CSS - Include with every page -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+</head>
+
+<body>
+
+    <div id="wrapper">
+	
+		<!-- add left and top menu -->
+      <?php include("include/menu.php"); ?>
+                   
+		<div id="page-wrapper">
+      
+      <div id="notifyInfo" class="alert alert-success alert-dismissable">
+         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+         <span id="infoText"></span>
+      </div>
+      <div id="notifyError" class="alert alert-danger alert-dismissable">
+         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+         <span id="errorText"></span>
+      </div>
+               		
+      <div class="row">
+            <div id="busy1" class="square"></div>
+				<div class="col-lg-12" style="height:100px;">
+					<h3 class="page-header">VPNMAN Configuration</h3>
+				</div>
+				<!-- /.col-lg-12 -->
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="panel panel-default">
+               <!--
+						<div class="panel-heading">
+							<h3>VPNMAN Configuration</h3>
+						</div>
+                  -->
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div class="table-responsive">
+                        <form role="form" action="" method="post" id="configForm">
+                        <input type="hidden" name="action" value="saveConfig">
+								<table class="table table-striped table-bordered table-hover" id="dataTables-example">
+									<thead class="small">
+										<tr>
+											<th>Parameter</th>
+											<th>Value</th>                                 
+										</tr>
+									</thead>
+									<tbody class="small" id="vpnData">
+                           
+									<?php show_configuration() ?>
+									
+                           </tbody>
+								</table>
+                        <a href="javascript:saveConfig();" class="btn btn-success ">SAVE CONFIG</a>
+                        <!--<button type="submit" class="btn btn-success">SAVE CONFIG</button>-->
+                        </form>
+							</div>
+							<!-- /.table-responsive -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->	
+				</div>	
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /#page-wrapper -->
+		
+	</div>
+	<!-- /#wrapper -->
+	
+	<div id="about">
+		<center><h5><b>VPNMAN v0.1</b></h5><p>developed by <a href="http://www.alpha-si.com">Alpha SI s.r.l.</a></p></center>
+	</div>
+	       
+   <!-- Core Scripts - Include with every page -->
+	<script src="http://maps.google.com/maps/api/js?sensor=true" type="text/javascript"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js" type="text/javascript"></script>
+	<script src="js/jquery-ui-map/ui/min/jquery.ui.map.full.min.js" type="text/javascript"></script>
+	<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+	<script src="js/reman-vpn.js"></script>
+	
+	<script type="text/javascript">
+   $(function() {
+    $( document ).tooltip();
+    $('#notifyInfo').hide();
+    $('#notifyError').hide();
+  });
+  
+   $(function() {
+      $('#about').dialog({
+         autoOpen: false,
+         height: 150,
+         width: 300,
+         modal: true,
+         //position: { my: "center", at: "center top", of: "#page-wrapper" },
+      });
+   });
+   
+   function showResult( data, textStatus, jqXHR )
+   {
+      if (textStatus == 'success')
+      {
+         if (data.indexOf("OK,") >= 0)
+         {
+            var str = "SUCCESS: " + data.substring(3);
+            $('#infoText').text(str);
+            $('#notifyInfo').show();
+         }
+         else
+         {
+            var str = "ERROR: " + data;
+            $('#errorText').text(str);
+            $('#notifyError').show();
+         }
+      }
+      else
+      {
+         $('#errorText').text(textStatus + ": " + data);
+         $('#notifyError').show();
+      } 
+   }
+   
+   function saveConfig()
+   {
+      if (confirm("Save configuration?"))
+		{
+			$.post('configuration.php', $('#configForm').serialize(), showResult);
+		}
+   }
+   
+   function showAbout()
+   {
+      $('#about').dialog("open");
+   }
+	</script>
+
+    <!--<script src="js/jquery-1.10.2.js"></script>-->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/plugins/metisMenu/jquery.metisMenu.js"></script>
+
+    <!-- Page-Level Plugin Scripts - Dashboard -->
+    <script src="js/plugins/morris/morris.js"></script>
+
+    <!-- SB Admin Scripts - Include with every page -->
+    <script src="js/sb-admin.js"></script>
+
+</body>
+
+</html>

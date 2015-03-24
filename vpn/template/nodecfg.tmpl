@@ -1,0 +1,40 @@
+# server address and port
+remote %SERVER_ADDR% %SRV_PORT%
+
+# server protocol
+proto %PROTO_TYPE%
+
+# vpn device
+dev tun
+
+# this is a VPN client
+client
+
+# server certificate
+ca %CA_CRT_FILE%
+
+# username/password authentication
+#auth-user-pass login.txt
+
+persist-tun
+persist-key
+
+# keep-alive ping
+ping 10
+
+# enable LZO compression
+comp-lzo
+
+# moderate verbosity
+verb 4
+mute 10
+
+# infinite retry to resolve remote address
+resolv-retry infinite
+
+# enable management interface
+#management 127.0.0.1 12345
+
+# configure up/down script for iptables configuration
+script-security 2
+#up /etc/openvpn/vpnman/vpncfg/connect.sh

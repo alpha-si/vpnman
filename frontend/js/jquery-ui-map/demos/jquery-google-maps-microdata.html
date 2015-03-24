@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+   <head>
+		<title>Example with Google maps and microdata - Google maps jQuery plugin</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta http-equiv="content-language" content="en" />
+		<meta name="author" content="Johan Säll Larsson" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="keywords" content="Google maps, jQuery, plugin, microdata" />
+		<meta name="description" content="An example how to load markers with microdata using jQuery and Google maps v3" />
+		<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+		<meta name="DC.title" content="Example with Google maps and microdata - Google maps jQuery plugin" />
+		<meta name="DC.subject" content="Google maps;jQuery;plugin;microdata" />
+		<meta name="DC.description" content="An example how to load markers with microdata using jQuery and Google maps v3" />
+		<meta name="DC.creator" content="Johan Säll Larsson" />
+		<meta name="DC.language" content="en" />
+		<link type="text/css" rel="stylesheet" href="css/960/min/960.css" />
+		<link type="text/css" rel="stylesheet" href="css/960/min/960_16_col.css" />
+		<link type="text/css" rel="stylesheet" href="css/normalize/min/normalize.css" />
+		<link type="text/css" rel="stylesheet" href="css/prettify/min/prettify.css" />
+		<link type="text/css" rel="stylesheet" href="css/style.css" />
+		<script type="text/javascript" src="js/modernizr-2.0.6/modernizr.min.js"></script>
+    </head>
+    <body>
+		<header class="dark">
+			<div class="container_16">
+				<h1><a href="/">Google maps jQuery plugin <span id="version"></span></a> load markers with microdata example</h1>
+			</div>
+		</header>
+		<div class="container_16">
+			<article class="grid_16">
+				<div class="item rounded dark">
+					<div id="map_canvas" class="map rounded"></div>
+				</div>
+				<div class="content rounded light shadow" itemscope itemtype="http://data-vocabulary.org/Event">
+  ​					<a href="#spinaltap" itemprop="url"><span itemprop="summary">Spinal Tap</span></a>
+					<span itemprop="description">
+						After their highly-publicized search for a new drummer, Spinal Tap kicks off their latest comeback tour with a San Francisco show.
+					</span>
+					When:
+					<time itemprop="startDate" datetime="2015-10-15T19:00-08:00">Oct 15, 7:00PM</time>—
+					<time itemprop="endDate" datetime="2015-10-15T19:00-08:00">Oct 15, 9:00PM</time>
+					Where:
+					​<span itemprop="location" itemscope itemtype="http://data-vocabulary.org/​Organization">
+						​<span itemprop="name">Warfield Theatre</span>
+						​<span itemprop="address" itemscope itemtype="http://data-vocabulary.org/Address">
+							<span itemprop="street-address">982 Market St</span>, 
+							<span itemprop="locality">San Francisco</span>, 
+							<span itemprop="region">CA</span>
+						</span>
+						<span itemprop="geo" itemscope itemtype="http://data-vocabulary.org/​Geo">
+							<meta itemprop="latitude" content="37.774929" />
+							<meta itemprop="longitude" content="-122.419416" />
+						</span>
+					</span>
+				</div>
+				<div class="content rounded light shadow">
+					<h2>Using jquery with Google maps</h2>
+					<p>Download <a href="http://jquery.com/">jQuery 1.4.X or higher</a> or use <a href="http://code.google.com/intl/sv-SE/apis/libraries/devguide.html">Googles</a> or <a href="http://www.asp.net/ajaxlibrary/cdn.ashx">Microsofts</a>  <abbr title="Content delivery network"><a href="http://en.wikipedia.org/wiki/Content_delivery_network">CDN</a></abbr>.</p>
+<pre class="prettyprint rounded">
+&lt;script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="PATH_TO_PLUGIN/jquery.ui.map.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="PATH_TO_PLUGIN/jquery.ui.map.microdata.js"&gt;&lt;/script&gt;</pre>
+
+<p>This example can be recreated using the following code, using the "bind" event:</p>
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap().bind('init', function() {
+	$('#map_canvas').gmap('microdata', 'http://data-vocabulary.org/Event', function(result, item, index) {
+		var lat = result.location[0].geo[0].latitude;
+		var lng = result.location[0].geo[0].longitude;
+		var latlng = new google.maps.LatLng(lat, lng);
+		$('#map_canvas').gmap('addMarker', { 'bounds':true, 'position': latlng, 'content': result.description }, 
+			function(map, marker) {
+				$(item).click(function() {
+					$(marker).triggerEvent('click');
+					return false;
+				});
+			}
+		).click( function() {
+			$('#map_canvas').gmap('openInfoWindow', {'content': $(this)[0].content}, this ); 
+		});														 
+	});
+});</pre>
+<p>The same code as above, using the callback function:</p>
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap({'callback':function() {
+	var self = this;
+	self.microdata('http://data-vocabulary.org/Event', function(result, item, index) {
+		var lat = result.location[0].geo[0].latitude;
+		var lng = result.location[0].geo[0].longitude;
+		var latlng = new google.maps.LatLng(lat, lng);
+		self.addMarker({ 'bounds':true, 'position': latlng, 'content': result.description }, 
+			function(map, marker) {
+				$(item).click(function() {
+					$(marker).triggerEvent('click');
+					return false;
+				});
+			}
+		).click( function() {
+			self.openInfoWindow({'content': $(this)[0].content}, this ); 
+		});														 
+	});
+}});</pre>
+<p>The same code as above, without the constructor:</p>
+<pre class="prettyprint rounded">
+$('#map_canvas').gmap('microdata', 'http://data-vocabulary.org/Event', function(result, item, index) {
+	var lat = result.location[0].geo[0].latitude;
+	var lng = result.location[0].geo[0].longitude;
+	var latlng = new google.maps.LatLng(lat, lng);
+	$('#map_canvas').gmap('addMarker', { 'bounds':true, 'position': latlng, 'content': result.description }, 
+		function(map, marker) {
+			$(item).click(function() {
+				$(marker).triggerEvent('click');
+				return false;
+			});
+		}
+	).click( function() {
+		$('#map_canvas').gmap('openInfoWindow', {'content': $(this)[0].content}, this ); 
+	});														 
+});</pre>
+<p>The HTML used in this example looks like this:</p>
+<pre class="prettyprint rounded">
+&lt;div itemscope itemtype="http://data-vocabulary.org/Event"&gt;
+​	&lt;a href="/spinaltap" itemprop="url"&gt;
+		&lt;span itemprop="summary"&gt;Spinal Tap&lt;/span&gt;
+	&lt;/a&gt;
+	&lt;span itemprop="description"&gt;
+		After their highly-publicized search for a new drummer, Spinal Tap kicks off their latest ...
+	&lt;/span&gt;
+	When:
+	&lt;time itemprop="startDate" datetime="2015-10-15T19:00-08:00"&gt;Oct 15, 7:00PM&lt;/time&gt;—
+	&lt;time itemprop="endDate" datetime="2015-10-15T19:00-08:00"&gt;Oct 15, 9:00PM&lt;/time&gt;
+	Where:
+	​&lt;span itemprop="location" itemscope itemtype="http://data-vocabulary.org/​Organization"&gt;
+		​&lt;span itemprop="name"&gt;Warfield Theatre&lt;/span&gt;
+		​&lt;span itemprop="address" itemscope itemtype="http://data-vocabulary.org/Address"&gt;
+			&lt;span itemprop="street-address"&gt;982 Market St&lt;/span&gt;, 
+			&lt;span itemprop="locality"&gt;San Francisco&lt;/span&gt;, 
+			&lt;span itemprop="region"&gt;CA&lt;/span&gt;
+		&lt;/span&gt;
+		&lt;span itemprop="geo" itemscope itemtype="http://data-vocabulary.org/​Geo"&gt;
+			&lt;meta itemprop="latitude" content="37.774929" /&gt;
+			&lt;meta itemprop="longitude" content="-122.419416" /&gt;
+		&lt;/span&gt;
+	&lt;/span&gt;
+&lt;/div&gt;
+</pre>
+<p>The callback function will, with an HTML like above, return an object as seen below:</p>
+<pre class="prettyprint rounded">
+{	
+	@type: "Event",
+	description: "After their highly-publicized search for a new drummer, Spinal Tap kicks off their latest ...",
+	endDate: "2015-10-15T19:00-08:00",
+	location: [
+		{
+			@type: "​Organization"
+			address: [
+				{
+					@type: "Address"
+					locality: "San Francisco"
+					region: "CA"
+					street-address: "982 Market St"
+				}
+			]
+			geo: [
+				{
+					@type: "​Geo"
+					latitude: "37.774929"
+					longitude: "-122.419416"
+				}
+			]
+			name: "Warfield Theatre"
+		}
+	],
+	startDate: "2015-10-15T19:00-08:00",
+	url: "/spinaltap",
+	summary: "Spinal Tap"
+}
+</pre>
+
+					<p>There are many ways of writing this snippet, please refer to the <a href="http://code.google.com/p/jquery-ui-map/wiki/jquery_ui_map_v_3_sample_code">sample code</a> section in the wiki.</p>
+					<p>If you want to learn more about using microdata; read <a href="http://support.google.com/webmasters/bin/answer.py?hl=en&answer=99170">about rich snippets and structured data</a> 
+				</div>
+			</article>
+		</div>
+		<footer class="dark">
+			<div class="container_16">
+				<div class="grid_8">
+					<h2>More Google maps and jQuery examples</h2>
+					<ul>
+						<li><a href="jquery-google-maps-basic-example.html">Google maps and jQuery basics</a></li>
+						<li><a href="jquery-google-maps-geolocation.html">Google maps with geolocation</a></li>
+						<li><a href="jquery-google-maps-clustering.html">Using clusters with MarkerClusteredPlus</a></li>
+						<li><a href="jquery-google-maps-streetview.html">Microformats, Google streetview and jQuery dialog</a></li>
+						<li><a href="jquery-google-maps-geocoding.html">Click and drag events with Google geo search</a></li>
+						<li><a href="jquery-google-maps-json.html">Show markers from JSON</a></li>
+						<li class="sel buttonize"><a href="jquery-google-maps-microdata.html">Show markers with microdata</a></li>
+						<li><a href="jquery-google-maps-microformat.html">Show markers with microformats</a></li>
+						<li><a href="jquery-google-maps-rdfa.html">Show markers with RDFa</a></li>
+						<li><a href="jquery-google-maps-fusion-tables.html">Show markers from Google Fusion tables</a></li>
+						<li><a href="jquery-google-maps-filtering.html">Filter markers by property</a></li>
+						<li><a href="jquery-google-maps-mobile.html">Google maps with <strong>jQuery mobile</strong></a></li>
+					</ul>
+				</div>
+				<div id="forum" class="hidden rounded forum grid_8"></div>
+				<div class="grid_16" itemscope itemtype="http://data-vocabulary.org/Person">
+					Author: <span itemprop="name">Johan S&auml;ll Larsson</span> (<a href="http://johansalllarsson.se" itemprop="url">http://johansalllarsson.se</a>)
+				</div>
+			</div>
+		</footer>
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script> 
+		<script type="text/javascript" src="js/jquery-1.7.1/jquery.min.js"></script>
+		<script type="text/javascript" src="js/underscore-1.2.2/underscore.min.js"></script>
+		<script type="text/javascript" src="js/backbone-0.5.3/backbone.min.js"></script>
+		<script type="text/javascript" src="js/prettify/prettify.min.js"></script>
+		<script type="text/javascript" src="js/demo.js"></script>
+		<script type="text/javascript" src="../ui/jquery.ui.map.js"></script>
+		<script type="text/javascript" src="../ui/jquery.ui.map.microdata.js"></script>
+		<script type="text/javascript">
+            $(function() { 
+				demo.add(function() {
+					$('#map_canvas').gmap({'callback':function() {
+						var self = this;
+						self.microdata('http://data-vocabulary.org/Event', function(result, item, index) {
+							var latlng = new google.maps.LatLng(result.location[0].geo[0].latitude, result.location[0].geo[0].longitude);
+							self.addMarker({ 'bounds':true, 'position': latlng, 'content': '<div class="iw">{0}</div>'.format(result.description) }, function(map, marker) {
+								$(item).click(function() {
+									$(marker).triggerEvent('click');
+									return false;
+								});
+							}).click( function() {
+								self.openInfoWindow({'content': $(this)[0].content}, this ); 
+							});														 
+						});
+					}});
+				}).load();
+			});
+        </script>
+	</body>
+</html>
