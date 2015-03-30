@@ -334,7 +334,7 @@
       $('#vpnForm').dialog('close');
       $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
       
-      //@@@DEBUG alert($('#vpnEditForm').serialize());
+      alert($('#vpnEditForm').serialize());
       
       if ((action == 'update') && confirm("Save configuration?"))
 		{

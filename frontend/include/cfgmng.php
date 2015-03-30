@@ -129,15 +129,18 @@ function parseTemplate(&$env, &$content)
    
    return $res;
 }
- 
-// start session
-session_start();
 
-// check whether the session variable SESS_MEMBER_ID is present or not
-if(!isset($_SESSION['sess_username']) || (trim($_SESSION['sess_username']) == '')) 
+if (basename($_SERVER['PHP_SELF']) != 'vpnmanapi.php')
 {
-   header("location: login.php");
-   exit();
+   // start session
+   session_start();
+
+   // check whether the session variable SESS_MEMBER_ID is present or not
+   if(!isset($_SESSION['sess_username']) || (trim($_SESSION['sess_username']) == '')) 
+   {
+      header("location: login.php");
+      exit();
+   }
 }
 
 // database connection 

@@ -116,7 +116,8 @@ class VpnController extends Controller
    *********************************************************/
    protected function validate_vpnName($value, $action)
    {
-      return !empty($value);
+      return ( (empty($value) == false) && 
+               (preg_match('/\s/',$value) == 0) );
    }
    
    /********************************************************
@@ -1163,15 +1164,15 @@ class VpnController extends Controller
       $script = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/openvpn.sh";
       $vpncfg = $this->fields['srv_cfg_file'];
 
-      $cmd = "sudo $script start $vpncfg";
+      $cmd = "sudo -n $script start $vpncfg";
 
       $out_array = array();
+      $ret_val = 0;
       $res_str = exec($cmd, $out_array, $ret_val);
       
-      if ((!$res_str) || ($res_val != 0))
+      if ((!$res_str) || ($ret_val != 0))
       {
          // command fail
-         
          $out = "";
          foreach ($out_array as $line)
             $out .= $line . ",";
@@ -1204,15 +1205,15 @@ class VpnController extends Controller
       $script = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/openvpn.sh";
       $vpncfg = $this->fields['srv_cfg_file'];
 
-      $cmd = "sudo $script stop $vpncfg";
+      $cmd = "sudo -n $script stop $vpncfg";
 
       $out_array = array();
+      $ret_val = 0;
       $res_str = exec($cmd, $out_array, $ret_val);
       
-      if ((!$res_str) || ($res_val != 0))
+      if ((!$res_str) || ($ret_val != 0))
       {
          // command fail
-         
          $out = "";
          foreach ($out_array as $line)
             $out .= $line . ",";
@@ -1519,9 +1520,10 @@ class VpnController extends Controller
       }
       else
       {
-         //$this->urlif_delete();
+         $errstr = $this->GetLastError();
+         $this->urlif_delete();
          $this->response['result'] = false;
-         $this->response['error'] = $this->GetLastError();
+         $this->response['error'] = $errstr;
       }
    }
    

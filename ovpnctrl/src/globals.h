@@ -8,6 +8,8 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
+#define _ELPP_STACKTRACE_ON_CRASH
+
 #include <iostream>
 #include <unistd.h>
 #include <stdio.h>
@@ -18,11 +20,11 @@
 #include "CfgMng.h"
 #include "OvpnMng.h"
 
-#define OVPNCTRL_VERSION   "v0.0.2"
+#define OVPNCTRL_VERSION   "v0.0.3"
 
 extern CfgMng 	g_Cfg;
 extern DbDrv	g_Db;
 extern OvpnMng 	g_Openvpn;
-extern int		g_iVpnId;
+extern int	g_iVpnId;
 
 #endif /* GLOBALS_H_ */

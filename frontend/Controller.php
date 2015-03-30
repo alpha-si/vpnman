@@ -20,6 +20,7 @@ class Controller
       $this->response['error'] = "unknown";
       $this->response['sess_user_id'] = isset($_SESSION['sess_user_id']) ? $_SESSION['sess_user_id'] : "";
       $this->response['sess_role'] = isset($_SESSION['sess_role']) ? $_SESSION['sess_role'] : "";
+      $this->response['sess_vpn_id'] = isset($_SESSION['sess_vpn_id']) ? $_SESSION['sess_vpn_id'] : "";
       
       if (!isset($table))
       {

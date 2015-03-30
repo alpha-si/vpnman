@@ -35,7 +35,8 @@ class AccountController extends Controller
    *********************************************************/
    protected function validate_username($value, $action)
    {
-      return (!empty($value));
+      return ( (empty($value) == false) && 
+               (preg_match('/\s/',$value) == 0) );
    }
 
    /********************************************************
@@ -43,6 +44,14 @@ class AccountController extends Controller
    *********************************************************/
    protected function validate_passwd($value, $action)
    {
+      global $_REQUEST;
+      
+      if (isset($_REQUEST['auth_type']) && ($_REQUEST['auth_type'] == 'CERT_ONLY'))
+      {
+         // password is not used
+         return true;
+      }
+      
       return (!empty($value));
    }
 
@@ -307,6 +316,7 @@ class AccountController extends Controller
       $auth_csr = "";
       $auth_crt = "";
 		
+      // always create certificate, it may be used if authentication type is changed
       if (true/*$_REQUEST['auth_type'] != "PASS_ONLY"*/)
       {
          $acccfg = array();
@@ -331,6 +341,7 @@ class AccountController extends Controller
 			}
       }
       
+      // insert new account into db
       $query = $DB->prepare("INSERT INTO accounts(username,passwd,description,hw_serial,type,enabled,coordinates,auth_type,vpn_id) VALUES (?,?,?,?,?,?,?,?,?)");
 
 		if (!$query->execute($values))
@@ -341,6 +352,7 @@ class AccountController extends Controller
       
       $this->fields['id'] =  $DB->lastInsertId();
 
+      // store keys into db
       if (true/*$_REQUEST['auth_type'] != "PASS_ONLY"*/)
       {
          $query = $DB->prepare( "UPDATE accounts SET auth_key=?, auth_csr=?, auth_crt=? WHERE id=?");
@@ -391,21 +403,147 @@ class AccountController extends Controller
    }
    
    /********************************************************
-   Download zip configuration file
+   Download zip configuration file for node account
    *********************************************************/
-   public function urlif_download()
+   public function downloadZipNode()
    {
       global $VPNMAN_GLOBAL_CONFIG;
       global $DB;
       global $_REQUEST;
       
-      $this->response['error'] = "invalid account id";
+      //create the zip
+      $zip = new zipfile();
       
-      if (!isset($_REQUEST['id']))
+      // open template config
+      $template = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "template/nodecfg.tmpl";
+      if (!file_exists($template) || !($content = file_get_contents($template)))
       {
-         return;
+         $this->response['error'] = "[downloadZipNode] unable to open " . $template; 
+         return false;
       }
       
+      // build environment array
+      $env = array_merge($VPNMAN_GLOBAL_CONFIG, $this->vpn->GetVpnData(), $this->fields);
+      
+      $basename = $this->vpn->GetVpnParam('description') . "_" . $this->fields['username'];
+      $cfgfilename = $basename. ".conf";
+      $filesdir = $basename . "_files/";
+      $cafilename = $filesdir . "ca.crt";
+      $keyfilename = $filesdir . $this->fields['username'] . ".key";
+      $crtfilename = $filesdir . $this->fields['username'] . ".crt";
+      $upscript = $filesdir . "node_up_script.sh";
+      $downscript = $filesdir . "node_down_script.sh";
+      
+      // parse template
+      parseTemplate($env, $content);
+      
+      // set authentication directives according with account authentication type
+      $lines = explode("\n",$content);
+   
+      $i = 0;
+      
+      for ($i; $i < count($lines); $i++)
+      {
+         $line = trim($lines[$i]);
+         
+         if (empty($line) || $line[0] == '#')
+         {
+            continue;
+         }
+         
+         $tmp1 = "";
+         
+         if ((strpos($line, "auth-user-pass") != FALSE) ||
+             ($line == "tls-client") ||
+             (sscanf($line, "cert %s", $tmp1) == 1) ||
+             (sscanf($line, "key %s",$tmp1) == 1) ||
+             (sscanf($line, "ca %s",$tmp1) == 1))
+         {
+            $lines[$i] = "";
+         }
+      }
+      
+      $lines[$i++] = "";
+      $lines[$i++] = "### auto-generated ###";
+      $lines[$i++] = "ca $cafilename";
+      
+      switch ($this->fields['auth_type'])
+      {
+         case "PASS_ONLY":
+            $lines[$i++] = "auth-user-pass";
+            break;
+         case "CERT_ONLY":
+            $lines[$i++] = "tls-client";
+            $lines[$i++] = "cert $crtfilename";
+            $lines[$i++] = "key $keyfilename";
+            break;
+         case "CERT_PASS":
+            $lines[$i++] = "auth-user-pass";
+            $lines[$i++] = "tls-client";
+            $lines[$i++] = "cert $crtfilename";
+            $lines[$i++] = "key $keyfilename";
+            break;
+         default:
+            break;
+      }
+      
+      $content = implode("\n",$lines);
+      
+      // add configuration file to the zip archive
+      $zip->addFile($content, $cfgfilename);
+      
+      // put ca into zip archive
+      if (!file_exists($VPNMAN_GLOBAL_CONFIG['CA_CRT_FILE']) || 
+          !($content = file_get_contents($VPNMAN_GLOBAL_CONFIG['CA_CRT_FILE'])))
+      {
+         $this->response['error'] = "[downloadZipNode] unable to open " . $VPNMAN_GLOBAL_CONFIG['CA_CRT_FILE']; 
+         return false;
+      }
+      $zip->addFile($content, $cafilename);
+      
+      // add client private key to the zip archive
+      $zip->addFile($this->fields['auth_key'], $keyfilename);
+      
+      // add client certificate to the zip archive
+      $zip->addFile($this->fields['auth_crt'], $crtfilename);
+      
+      // add up script to the zip archive
+      $filename = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/node_up_script.sh";
+      if (!file_exists($filename) || !($content = file_get_contents($filename)))
+      {
+         $this->response['error'] = "[downloadZipNode] unable to open " . $filename; 
+         return false;
+      }
+      $zip->addFile($content, $upscript);
+      
+      // add down script to the zip archive
+      $filename = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/node_down_script.sh";
+      if (!file_exists($filename) || !($content = file_get_contents($filename)))
+      {
+         $this->response['error'] = "[downloadZipNode] unable to open " . $filename; 
+         return false;
+      }
+      $zip->addFile($content, $downscript);
+   
+      // download
+      header("Content-type: application/octet-stream");
+      header("Content-Disposition: attachment; filename=" . $basename . ".zip");
+      header("Content-Description: Files of an applicant");
+
+      //get the zip content and send it back to the browser
+      echo $zip->file();
+      exit;
+   }
+   
+   /********************************************************
+   Download zip configuration file
+   *********************************************************/
+   public function downloadZipClient()
+   {
+      global $VPNMAN_GLOBAL_CONFIG;
+      global $DB;
+      global $_REQUEST;
+       
       $query = $DB->prepare("SELECT username, type, auth_type, auth_key, auth_csr, auth_crt FROM accounts WHERE id=?");
       $query->execute(array($_REQUEST['id']));
       
@@ -414,19 +552,21 @@ class AccountController extends Controller
          //create the zip
          $zip = new zipfile();
     
-         $cfgfilename = $row[0] . ".ovpn";
-         $cafilename = "keys/ca.crt";
-         $keyfilename = "keys/" . $row[0] . ".key";
-         $csrfilename = "keys/" . $row[0] . ".csr";
-         $crtfilename = "keys/" . $row[0] . ".crt";
+         $basename = $this->vpn->GetVpnParam('description') . "_" . $row[0];
+         $cfgfilename = $basename . ".ovpn";
+         $filesdir = $basename . "_files/";
+         $cafilename = $filesdir . "ca.crt";
+         $keyfilename = $filesdir . $row[0] . ".key";
+         $csrfilename = $filesdir . $row[0] . ".csr";
+         $crtfilename = $filesdir . $row[0] . ".crt";
          
          // make openvpn configuration file
          $vpnid = 0;
          
          $cfg = array();
          $cfg['VPN_SERVER_ADDR'] = $VPNMAN_GLOBAL_CONFIG['SERVER_ADDR'];
-         $cfg['VPN_SERVER_PORT'] = $this->vpn->GetVpnParam['srv_port'];
-         $cfg['VPN_SERVER_PROTO'] = $this->vpn->GetVpnParam['proto_type'];
+         $cfg['VPN_SERVER_PORT'] = $this->vpn->GetVpnParam('srv_port');
+         $cfg['VPN_SERVER_PROTO'] = $this->vpn->GetVpnParam('proto_type');
          $cfg['CA_CERT_FILENAME'] = $cafilename;
          $cfg['AUTH_TYPE'] = $this->fields['auth_type'];
          $cfg['PKEY_FILENAME'] = $keyfilename;
@@ -454,12 +594,38 @@ class AccountController extends Controller
       
          // download
          header("Content-type: application/octet-stream");
-         header("Content-Disposition: attachment; filename=" . $row[0] . "_cfg.zip");
+         header("Content-Disposition: attachment; filename=" . $basename . ".zip");
          header("Content-Description: Files of an applicant");
 
          //get the zip content and send it back to the browser
          echo $zip->file();
          exit;
+      }
+   }
+   
+   /********************************************************
+   Download zip configuration file
+   *********************************************************/
+   public function urlif_download()
+   {
+      global $VPNMAN_GLOBAL_CONFIG;
+      global $DB;
+      global $_REQUEST;
+      
+      $this->response['error'] = "invalid account id";
+      
+      if (!isset($_REQUEST['id']))
+      {
+         return;
+      }
+      
+      if ($this->fields['type'] == 'NODE')
+      {
+         $this->downloadZipNode();
+      }
+      else
+      {
+         $this->downloadZipClient();
       }
    }
    
@@ -561,7 +727,6 @@ class AccountController extends Controller
          $writer->endElement();
       }
       
-      
       $writer->startElement('FILE');
       $writer->writeAttribute('name', 'vpnman_router.crt');
       $writer->writeAttribute('type', 'certificate');
@@ -573,9 +738,249 @@ class AccountController extends Controller
       $writer->writeAttribute('type', 'private key');
       $writer->text($this->fields['auth_key']);
       $writer->endElement();
-       
-      $writer->writeElement('RESULT', "1");
    } 
+   
+   /********************************************************
+   Convert an OpenVPN configuration directives to the OpenWRT UCI command
+   *********************************************************/
+   protected function openvpn2uci($ovpndir)
+   {
+      $ucidir = "";
+      
+      $ovpndir = trim($ovpndir);
+      
+      if (!empty($ovpndir) && !($ovpndir[0] == '#'))
+      {       
+         $elements = explode(' ', $ovpndir);
+         
+         // replace '-' with '_'
+         $elements[0] = str_replace("-", "_", $elements[0]);
+         
+         if ($elements[0] == 'remote')
+         {
+            $ucidir = "list 'remote' '";
+         }
+         else
+         {
+            $ucidir = "option '" . $elements[0] . "' '";
+         }
+         
+         if (count($elements) < 2)
+         {
+            switch ($elements[0])
+            {
+               case 'comp_lzo':
+                  $elements[1] = 'yes';
+                  break;
+               default:
+                  $elements[1] = '1';
+                  break;
+            }
+         }
+         
+         unset($elements[0]);
+         
+         $ucidir .= implode(" ", $elements) . "'\n";
+      }
+         
+      return $ucidir;
+   }
+   
+   /********************************************************
+   Download zip configuration file for node account
+   *********************************************************/
+   public function downloadWrtXml(&$writer)
+   {
+      global $VPNMAN_GLOBAL_CONFIG;
+      global $DB;
+      global $_REQUEST;
+      
+      $result = true;
+      
+      // build environment array
+      $env = array_merge($VPNMAN_GLOBAL_CONFIG, $this->vpn->GetVpnData(), $this->fields);
+      
+      // 
+      // open template config
+      //
+      
+      $template = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "template/nodecfg.tmpl";
+      
+      if (!file_exists($template) || !($content = file_get_contents($template)))
+      {
+         $this->response['error'] = "[downloadWrtNode] unable to open " . $template; 
+         $result = false;
+      }
+      
+      $basename = $this->vpn->GetVpnParam('description') . "_" . $this->fields['username'];
+      $cafilename = "ca.crt";
+      $keyfilename = $basename . ".key";
+      $crtfilename = $basename . ".crt";
+      $loginfilename = $basename . ".pwd";
+      $upscript = "node_up_script.sh";
+      $downscript = "node_down_script.sh";
+      
+      // parse template
+      parseTemplate($env, $content);
+      
+      // set authentication directives according with account authentication type
+      $lines = explode("\n",$content);
+   
+      $i = 0;
+      
+      for ($i; $i < count($lines); $i++)
+      {
+         $line = trim($lines[$i]);
+         
+         if (empty($line) || $line[0] == '#')
+         {
+            continue;
+         }
+         
+         $tmp1 = "";
+         
+         if ((strpos($line, "auth-user-pass") != FALSE) ||
+             ($line == "tls-client") ||
+             (sscanf($line, "cert %s", $tmp1) == 1) ||
+             (sscanf($line, "key %s",$tmp1) == 1) ||
+             (sscanf($line, "ca %s",$tmp1) == 1) ||
+             (sscanf($line, "up %s",$tmp1) == 1) ||
+             (sscanf($line, "down %s",$tmp1) == 1))
+         {
+            $lines[$i] = "";
+         }
+      }
+      
+      $lines[$i++] = "";
+      $lines[$i++] = "### auto-generated ###";
+      $lines[$i++] = "up %FILEPATH%/$upscript";
+      $lines[$i++] = "down %FILEPATH%/$downscript";
+      $lines[$i++] = "ca %FILEPATH%/$cafilename";
+      
+      switch ($this->fields['auth_type'])
+      {
+         case "PASS_ONLY":
+            $lines[$i++] = "auth-user-pass %FILEPATH%/$loginfilename";
+            break;
+         case "CERT_ONLY":
+            $lines[$i++] = "tls-client";
+            $lines[$i++] = "cert %FILEPATH%/$crtfilename";
+            $lines[$i++] = "key %FILEPATH%/$keyfilename";
+            break;
+         case "CERT_PASS":
+            $lines[$i++] = "auth-user-pass %FILEPATH%/$loginfilename";
+            $lines[$i++] = "tls-client";
+            $lines[$i++] = "cert %FILEPATH%/$crtfilename";
+            $lines[$i++] = "key %FILEPATH%/$keyfilename";
+            break;
+         default:
+            break;
+      }
+      
+      // 
+      // convert OpenVPN configuration to OpenWRT UCI
+      //
+      
+      $writer->startElement('UCICMD');
+  
+      foreach ($lines as $line)
+      {
+         $writer->text($this->openvpn2uci($line));
+      }
+      
+      $writer->endElement();
+      
+      //
+      // put ca into xml
+      //
+
+      if (file_exists($VPNMAN_GLOBAL_CONFIG['CA_CRT_FILE']) &&
+          ($cacert = file_get_contents($VPNMAN_GLOBAL_CONFIG['CA_CRT_FILE'])))
+      {
+         $writer->startElement('FILE');
+         $writer->writeAttribute('name', $cafilename);
+         $writer->writeAttribute('type', 'certificate');
+         $writer->text($cacert);
+         $writer->endElement();
+      }
+      else
+      {
+      }
+     
+      //
+      // put certificate into xml
+      //
+      if ($this->fields['auth_type'] != 'PASS_ONLY')
+      {
+         $writer->startElement('FILE');
+         $writer->writeAttribute('name', $crtfilename);
+         $writer->writeAttribute('type', 'certificate');
+         $writer->text($this->fields['auth_crt']);
+         $writer->endElement();
+      }
+      
+      //
+      // put private key into xml
+      //
+      if ($this->fields['auth_type'] != 'PASS_ONLY')
+      {
+         $writer->startElement('FILE');
+         $writer->writeAttribute('name', $keyfilename);
+         $writer->writeAttribute('type', 'privatekey');
+         $writer->text($this->fields['auth_key']);
+         $writer->endElement();
+      }
+      
+      // 
+      // add up script to the xml
+      //
+      
+      $filename = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/node_up_script.sh";
+      if (file_exists($filename) && ($content = file_get_contents($filename)))
+      {
+         $writer->startElement('FILE');
+         $writer->writeAttribute('name', $upscript);
+         $writer->writeAttribute('type', 'script');
+         $writer->text($content);
+         $writer->endElement();
+      }
+      else
+      {
+         $this->response['error'] = "[downloadWrtCfg] unable to read " . $filename;
+         $result = false;
+      }
+      
+      // 
+      // add down script to the xml
+      //
+      
+      $filename = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/node_down_script.sh";
+      if (file_exists($filename) && ($content = file_get_contents($filename)))
+      {
+         $writer->startElement('FILE');
+         $writer->writeAttribute('name', $downscript);
+         $writer->writeAttribute('type', 'script');
+         $writer->text($content);
+         $writer->endElement();
+      }
+      else
+      {
+         $this->response['error'] = "[downloadWrtCfg] unable to read " . $filename; 
+         $result = false;
+      }
+      
+      if ($this->fields['auth_type'] != 'CERT_ONLY')
+      {
+         $content = $this->fields['username'] . "\n" . $this->fields['passwd'];
+         $writer->startElement('FILE');
+         $writer->writeAttribute('name', $loginfilename);
+         $writer->writeAttribute('type', 'login');
+         $writer->text($content);
+         $writer->endElement();   
+      }
+      
+      return $result;
+   }
    
 }
 

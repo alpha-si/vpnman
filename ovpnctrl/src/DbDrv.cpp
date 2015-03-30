@@ -90,9 +90,7 @@ MYSQL_RES* DbDrv::ExecuteQuery( const char* p_acQuery )
 	}
 	else
 	{
-		//@@@TODO: log error...
-		//g_LogMng.LogMsg( p_Query );
-		//g_LogMng.LogMsg( CString(mysql_error(m_Conn)) );
+		LOG(ERROR) << "DbDrv::ExecuteQuery: " << mysql_error(m_pConn);
 	}
 
 	return l_pResultSet;
@@ -120,11 +118,7 @@ int DbDrv::ExecuteUpdate( const char* p_acQuery, unsigned int* p_puiInsertId )
 	}
 	else
 	{
-		//@@@TODO: log error...
-		//g_LogMng.LogMsg( p_Query );
-		//g_LogMng.LogMsg( CString(mysql_error(m_Conn)) );
-		//LOG(ERROR) << "Query: " << p_acQuery;
-		//LOG(ERROR) << "Query error " << mysql_errno(m_pConn) << ": " << mysql_error(m_pConn);
+		LOG(ERROR) << "DbDrv::ExecuteUpdate: " << mysql_error(m_pConn);
 	}
 
 	return l_iResult;
@@ -142,8 +136,8 @@ bool DbDrv::ExecuteScalar( const char* p_acQuery, int& p_iResValue )
 
 	if ( (m_boConnected == false) || (m_pConn == NULL) )
 	{
-      LOG(ERROR) << "DbDrv::ExecuteScalar1: no mysql connection!";
-		return NULL;
+      LOG(ERROR) << "DbDrv::ExecuteScalar(1): no mysql connection!";
+		return false;
 	}
 
 	if (mysql_query(m_pConn, p_acQuery) == 0)
@@ -160,9 +154,7 @@ bool DbDrv::ExecuteScalar( const char* p_acQuery, int& p_iResValue )
 	}
 	else
 	{
-		//@@@TODO: log error...
-		//g_LogMng.LogMsg( _T("SQL ERROR: ") + p_Query );
-		//g_LogMng.LogMsg( CString(mysql_error(m_Conn)) );
+      LOG(ERROR) << "DbDrv::ExecuteScalar(1): " << mysql_error(m_pConn);
 	}
 
 	return l_boResult;
@@ -177,8 +169,8 @@ bool DbDrv::ExecuteScalar( const char* p_acQuery, char* p_acResValue, int p_iMax
 
 	if ( (m_boConnected == false) || (m_pConn == NULL) )
 	{
-      LOG(ERROR) << "DbDrv::ExecuteScalar2: no mysql connection!";
-		return NULL;
+      LOG(ERROR) << "DbDrv::ExecuteScalar(2): no mysql connection!";
+		return false;
 	}
 
 	if (mysql_query(m_pConn, p_acQuery) == 0)
@@ -199,9 +191,7 @@ bool DbDrv::ExecuteScalar( const char* p_acQuery, char* p_acResValue, int p_iMax
 	}
 	else
 	{
-		//@@@TODO: log error...
-		//g_LogMng.LogMsg( _T("SQL ERROR: ") + p_Query );
-		//g_LogMng.LogMsg( CString(mysql_error(m_Conn)) );
+		LOG(ERROR) << "DbDrv::ExecuteScalar(1): " << mysql_error(m_pConn);
 	}
 
 	return l_boResult;

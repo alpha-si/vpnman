@@ -595,16 +595,18 @@ std::string OvpnResponseMng::toMysqlDate( std::string& p_OvpnDate )
 
 void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
 {
-	int l_iLineIdx;
+	int l_iLineIdx, l_iCount;
 	char l_acQuery[1024];
 	char l_acUserId[1024];
 	char l_acConnectionId[1024];
 	std::string l_Query = "";
 	bool l_bo_user_present = false;
-	MYSQL_RES* l_pResSet;
 	MYSQL_ROW l_pResRow;
+   MYSQL_RES* l_pResSet;
+   
+   LOG(INFO) << "handleCmdStatus: periodic status update";
 
-   g_Db.ExecuteUpdate("LOCK TABLES accounts WRITE");
+   g_Db.ExecuteUpdate("LOCK TABLES accounts WRITE, connection_history WRITE");
    
 	sprintf( l_acQuery,
 			"UPDATE accounts SET status = 'DISCONNECTED' WHERE vpn_id = '%d'",
@@ -655,14 +657,18 @@ void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
 		
 		// checks if the user is present inside connection_history with a still opened session 
 		sprintf(l_acQuery,
-				"SELECT id FROM connection_history WHERE user_id = '%d' AND vpn_id = '%d' AND end_time IS NULL",
+				"SELECT COUNT(*) FROM connection_history WHERE user_id = '%d' AND vpn_id = '%d' AND end_time IS NULL",
 	    	    l_iUserId,
 	    	    g_iVpnId);
 
-		l_pResSet = g_Db.ExecuteQuery(l_acQuery);
-		int l_i_num_rows = mysql_num_rows(l_pResSet);
-		
-		if (l_i_num_rows > 0)
+      l_iCount = 0;
+      if (g_Db.ExecuteScalar(l_acQuery, l_iCount) == false)
+      {
+         LOG(ERROR) << "handleCmdStatus: query error for " << l_Values[0] << " [" << l_acQuery << "]";
+         continue;
+      }
+      
+		if (l_iCount > 0)
 		{
 			l_bo_user_present = true;
 		}
@@ -684,8 +690,7 @@ void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
 		//LOG(INFO) << "Query: " << l_acQuery;
 
 	    // if update fails and the user is not present in the connection_history table, insert a new connection history record
-	    if (g_Db.ExecuteUpdate(l_acQuery) == 0 &&
-		    l_bo_user_present == false )
+	    if ( (g_Db.ExecuteUpdate(l_acQuery) == 0) && (l_bo_user_present == false) )
 	    {
 		    sprintf( l_acQuery,
 		    	     "INSERT INTO connection_history(user_id,start_time,end_time,bytes_received,bytes_sent,trusted_ip,trusted_port,vpn_id) VALUES('%d',NOW(),NULL,'%s','%s','%s','%s','%d')",
@@ -700,8 +705,6 @@ void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
           
           LOG(INFO) << "handleCmdStatus: update connected user (" << l_Values[0].c_str() << ")";
 	    }
-
-		g_Db.FreeResult(l_pResSet);
 	}	
 		
 	// selects all accounts which have the connection in DISCONNECTED state

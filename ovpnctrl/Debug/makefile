@@ -45,7 +45,6 @@ endif
 # All Target
 all: ovpnctrl
 
-# Tool invocations
 ovpnctrl: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
@@ -53,7 +52,9 @@ ovpnctrl: $(OBJS) $(USER_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-# Other Targets
+install: all
+	cp ./ovpnctrl ../../vpn/bin/ovpnctrl
+
 clean:
 	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) ovpnctrl
 	-@echo ' '

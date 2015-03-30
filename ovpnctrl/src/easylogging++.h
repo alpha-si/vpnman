@@ -4923,7 +4923,12 @@ static std::string crashReason(int sig) {
 /// @brief Logs reason of crash from sig
 static void logCrashReason(int sig, bool stackTraceIfAvailable, const Level& level, const char* logger) {
     std::stringstream ss;
-    ss << "CRASH HANDLED; ";
+#if _ELPP_STACKTRACE
+    int stacktrace_compiled = 1;
+#else
+    int stacktrace_compiled = 0;
+#endif
+    ss << "CRASH HANDLED(" << stacktrace_compiled << "," << stackTraceIfAvailable << "); ";
     ss << crashReason(sig);
 #if _ELPP_STACKTRACE
     if (stackTraceIfAvailable) {

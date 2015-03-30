@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Make sure only root can run our script
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
 # Location of openvpn binary
 openvpn=""
 openvpn_locations="/usr/sbin/openvpn /usr/local/sbin/openvpn"
@@ -22,7 +28,7 @@ work=/etc/openvpn
 if ! [ -f  $openvpn ] 
 then
   echo "openvpn binary not found"
-  exit 0
+  exit 1
 fi
 
 cfg=$2
@@ -35,7 +41,7 @@ ovpnctrl_pidf=${piddir}/${bn}_ctrl.pid
 if ! [ -f  $cfg ] 
 then
   echo "openvpn config not found"
-  exit 0
+  exit 1
 fi
 
 # See how we were called.
@@ -103,10 +109,15 @@ case "$1" in
 	sleep 2
 	$0 start $2
 	;;
+  
+  checkfw)
+   iptables -L allow_vpn
+   exit
+   ;;
    
   *)
 	echo "Usage: openvpn {start|stop|restart} CONF_FILE"
-	exit 1
+#	exit 0
 	;;
    
 esac

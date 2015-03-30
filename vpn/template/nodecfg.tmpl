@@ -10,12 +10,6 @@ dev tun
 # this is a VPN client
 client
 
-# server certificate
-ca %CA_CRT_FILE%
-
-# username/password authentication
-#auth-user-pass login.txt
-
 persist-tun
 persist-key
 
@@ -37,4 +31,5 @@ resolv-retry infinite
 
 # configure up/down script for iptables configuration
 script-security 2
-#up /etc/openvpn/vpnman/vpncfg/connect.sh
+up %DESCRIPTION%_%USERNAME%_files/node_up_script.sh
+down %DESCRIPTION%_%USERNAME%_files/node_down_script.sh

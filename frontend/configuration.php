@@ -1,49 +1,6 @@
 <?php
-	include("include/cfgmng.php");
-	
-   function show_configuration()
-   { 
-      global $DB;
-      
-      $query = $DB->query("SELECT * FROM config");
-   
-      while ($row = $query->fetch(PDO::FETCH_NUM))
-      {
-         $param_key = $row[0];
-         $param_value = $row[1];
-         $param_descr = $row[2];
-         
-         echo "<tr><td>$param_key</td><td><input type=\"text\" title=\"$param_descr\" size=\"50\" class=\"form-control\" name=\"$param_key\" value=\"$param_value\"></td></tr>";
-      }
-   }
-   
-   function save_config()
-   {
-      global $_REQUEST;
-      global $DB;
-
-      $modified = 0;
-      
-      foreach($_REQUEST as $param_key => $param_value)
-      {
-         $query = $DB->prepare("UPDATE config SET param_value = ? WHERE param_name = ?");
-         
-         $res = $query->execute(array($param_value, $param_key));
-         
-         if ($res && ($query->rowCount() > 0))
-         {
-            $modified++;
-         }
-      }
-      
-      echo("OK, Configuration Saved! (# $modified parameter changed)");
-   }
-   
-   if (isset($_REQUEST['action']) && ($_REQUEST['action'] == "saveConfig"))
-   {
-      save_config();
-      exit;
-   }
+	//include("include/cfgmng.php");
+	include("ConfigMng.php");
 ?>
 
 <!DOCTYPE html>
@@ -102,10 +59,15 @@
 						</div>
                   -->
 						<!-- /.panel-heading -->
-						<div class="panel-body">
-							<div class="table-responsive">
+						<div class="ui-tabs" id='cfgtabs'>
+                      <ul class="ui-tabs-nav">
+                        <li><a href="#cfgeditor"><span>Edit Configuration</span></a></li>
+                        <li><a href="#cfgchecks"><span>Check Configuration</span></a></li>
+                     </ul>
+                     <!-- configuration editor -->
+							<div class="ui-tabs-panel" id='cfgeditor'>
                         <form role="form" action="" method="post" id="configForm">
-                        <input type="hidden" name="action" value="saveConfig">
+                        <input type="hidden" name="action" value="save">
 								<table class="table table-striped table-bordered table-hover" id="dataTables-example">
 									<thead class="small">
 										<tr>
@@ -115,15 +77,35 @@
 									</thead>
 									<tbody class="small" id="vpnData">
                            
-									<?php show_configuration() ?>
+									<?php 
+                              $CFG->urlif_getcfg();
+                              echo $CFG->GetLastHtmlData();
+                           ?>
 									
                            </tbody>
 								</table>
                         <a href="javascript:saveConfig();" class="btn btn-success ">SAVE CONFIG</a>
-                        <!--<button type="submit" class="btn btn-success">SAVE CONFIG</button>-->
+                        <a href="javascript:buildCA();" class="btn btn-success ">BUILD CA</a>
                         </form>
 							</div>
-							<!-- /.table-responsive -->
+                     <!-- configuration checks -->
+                     <div class="ui-tabs-panel" id='cfgchecks'>  
+                        <table class="table table-striped table-bordered table-hover" id="check-res">
+                           <thead class="small">
+                              <tr>
+                                 <th>Check</th>
+                                 <th>Result</th>
+                                 <th>Info</th>
+                              </tr>
+                         </thead>
+                         <tbody class="small" id="check-res">
+                           <?php
+                              $CFG->urlif_checks();
+                              echo $CFG->GetLastHtmlData();
+                           ?>
+                        </tbody>
+                        <a href="javascript:runChecks();" class="btn btn-success ">RUN CHECKS</a>
+							</div>
 						</div>
 						<!-- /.panel-body -->
 					</div>
@@ -147,12 +129,14 @@
 	<script src="js/jquery-ui-map/ui/min/jquery.ui.map.full.min.js" type="text/javascript"></script>
 	<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
 	<script src="js/reman-vpn.js"></script>
-	
+	<script src="js/waiting.js"></script>
+   
 	<script type="text/javascript">
    $(function() {
     $( document ).tooltip();
     $('#notifyInfo').hide();
     $('#notifyError').hide();
+    $( "#cfgtabs" ).tabs();
   });
   
    $(function() {
@@ -167,33 +151,110 @@
    
    function showResult( data, textStatus, jqXHR )
    {
-      if (textStatus == 'success')
+      $('#busy1').activity(false);
+      
+      values = parseXmlData(data);
+      
+      if (values['result'] == 1)
       {
-         if (data.indexOf("OK,") >= 0)
-         {
-            var str = "SUCCESS: " + data.substring(3);
-            $('#infoText').text(str);
+            $('#infoText').text(values['error']);
             $('#notifyInfo').show();
-         }
-         else
-         {
-            var str = "ERROR: " + data;
-            $('#errorText').text(str);
-            $('#notifyError').show();
-         }
       }
       else
       {
-         $('#errorText').text(textStatus + ": " + data);
+         $('#errorText').text(values['error']);
          $('#notifyError').show();
-      } 
+      }
+   }
+   
+   function runChecks()
+   {
+      $.ajax({
+         url : "ConfigMng.php?action=checks",
+         beforeSend : function () {
+            $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
+            $("button").addClass('disabled');
+         },
+         complete: function () {
+            $('#busy1').activity(false);
+         },
+         success : function (data,stato) {
+            values = parseXmlData(data);     
+            if (values['result'] == 1)
+            {
+               $('#check-res').html(values['html']);
+               $("#accountList").html(values['html']);
+            }
+            else
+            {
+               $('#errorText').text("ERROR: " + values['error']);
+               $('#notifyError').show();
+            }
+         },
+         error : function (richiesta,stato,errori) {
+            //alert("E' evvenuto un errore: refreshNodesStatus = " + stato);
+         }
+         });
+   }
+   
+   function buildCA()
+   {
+      if (confirm("WARNING: current ca keys will be overridden, continue?"))
+      {
+         $.ajax({
+            url : "ConfigMng.php?action=buildca",
+            beforeSend : function () {
+               $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
+               $("button").addClass('disabled');
+            },
+            complete: function () {
+               $('#busy1').activity(false);
+            },
+            success : function (data,stato) {
+               showResult(data,stato);
+               updateConfig();
+            },
+            error : function (richiesta,stato,errori) {
+               //alert("E' evvenuto un errore: refreshNodesStatus = " + stato);
+            }
+            });
+      }
+   }
+   
+   function updateConfig()
+   {
+      $.ajax({
+         url : "ConfigMng.php?action=getcfg",
+         beforeSend : function () {
+            $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
+            $("button").addClass('disabled');
+         },
+         complete: function () {
+            $('#busy1').activity(false);
+         },
+         success : function (data,stato) {
+            values = parseXmlData(data);
+            if (values['result'] == 1)
+            {
+               $('#vpnData').html(values['html']);
+            }
+            else
+            {
+               $('#errorText').text("ERROR: " + values['error']);
+               $('#notifyError').show();
+            }
+         },
+         error : function (richiesta,stato,errori) {
+         }
+      });
    }
    
    function saveConfig()
    {
       if (confirm("Save configuration?"))
 		{
-			$.post('configuration.php', $('#configForm').serialize(), showResult);
+			//$.post('configuration.php', $('#configForm').serialize(), showResult);
+         $.post('ConfigMng.php', $('#configForm').serialize(), showResult);
 		}
    }
    
