@@ -168,15 +168,15 @@
             values = parseXmlData(data);
             if (values['result'] == 1)
             {
-               $('select[name=user_id]').append(data);
+               $('select[name=user_id]').append(values['html']);
             }
 			},
 			error : function (richiesta,stato,errori) {
-				//alert("E' evvenuto un errore. Il stato della chiamata: "+stato);
+				//alert("E' evvenuto un errore. Stato della chiamata: "+stato);
 			}
 			});
 	});
-	
+	/*
 	function parseXmlData(req)
 	{
 		//alert(req);
@@ -195,7 +195,7 @@
 		
 		return data;
 	}
-
+   */
 	function addNetworkForm()
 	{
 		$('form')[0].reset();

@@ -288,7 +288,7 @@
    function editVpnCfg(id)
    {
       $.ajax({
-         url : 'VpnController.php?action=getcfg&id=' + $('input[name=id').val(),
+         url : 'VpnController.php?action=getcfg&id=' + $('input[name=id]').val(),
          beforeSend : function () {
             $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
          },

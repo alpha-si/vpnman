@@ -174,7 +174,7 @@
 				}
 			},
 			error : function (richiesta,stato,errori) {
-				alert("E' evvenuto un errore: createMapMarkers = " + stato);
+				//alert("E' evvenuto un errore: createMapMarkers = " + stato);
 			}
 			});
 			

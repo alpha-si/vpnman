@@ -1476,7 +1476,7 @@ class VpnController extends Controller
       }
       else
       {
-         $this->response['error'] = "cannot read configuration file";
+         $this->response['error'] = "cannot read configuration file \"" . $this->fields['srv_cfg_file'] . "\"";
       }      
    }
    
@@ -1637,6 +1637,13 @@ class VpnController extends Controller
          if ($row = $query->fetch(PDO::FETCH_NUM))
          {
             $this->response['status'] = $row[0] < 10 ? 'RUNNING' : 'NOT RUNNING';
+         }
+         
+         // if vpn is down force all vpn account to unknown status
+         if ($this->response['status'] == 'NOT RUNNING')
+         {
+            $query = $DB->prepare("UPDATE accounts SET status = 'DISCONNECTED' WHERE vpn_id=?");
+            $query->execute(array($_SESSION['sess_vpn_id']));
          }
       }
       

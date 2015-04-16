@@ -457,7 +457,9 @@ class AccountController extends Controller
              ($line == "tls-client") ||
              (sscanf($line, "cert %s", $tmp1) == 1) ||
              (sscanf($line, "key %s",$tmp1) == 1) ||
-             (sscanf($line, "ca %s",$tmp1) == 1))
+             (sscanf($line, "ca %s",$tmp1) == 1) ||
+             (sscanf($line, "up %s",$tmp1) == 1) ||
+             (sscanf($line, "down %s",$tmp1) == 1) )
          {
             $lines[$i] = "";
          }
@@ -466,6 +468,8 @@ class AccountController extends Controller
       $lines[$i++] = "";
       $lines[$i++] = "### auto-generated ###";
       $lines[$i++] = "ca $cafilename";
+      $lines[$i++] = "up $upscript";
+      $lines[$i++] = "down $downscript";
       
       switch ($this->fields['auth_type'])
       {
