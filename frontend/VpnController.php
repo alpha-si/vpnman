@@ -225,7 +225,7 @@ class VpnController extends Controller
    /********************************************************
    Validate vpn organization city value
    *********************************************************/
-   protected function validate_conent($value, $action)
+   protected function validate_content($value, $action)
    {
       return true;
    }
@@ -1285,38 +1285,77 @@ class VpnController extends Controller
 			return;
 		}
 		
-      $vpn_id = $_REQUEST['id']; 
-		$descr = isset($_REQUEST['vpnName']) ? $_REQUEST['vpnName'] : ""; 
+        $this->fields['id'] = $_REQUEST['id']; 
+		$this->fields['description'] = isset($_REQUEST['vpnName']) ? $_REQUEST['vpnName'] : ""; 
+      /* @@@TO BE ROMEVED? (READONLY FIELDS)
 		$org_name = isset($_REQUEST['vpnOrgName']) ? $_REQUEST['vpnOrgName'] : "";
 		$org_unit = isset($_REQUEST['vpnOrgUnit']) ? $_REQUEST['vpnOrgUnit'] : "";
 		$org_mail = isset($_REQUEST['vpnOrgMail']) ? $_REQUEST['vpnOrgMail'] : "";
 		$org_country = isset($_REQUEST['vpnOrgCountry']) ? $_REQUEST['vpnOrgCountry'] : "";
 		$org_prov = isset($_REQUEST['vpnOrgProv']) ? $_REQUEST['vpnOrgProv'] : "";
 		$org_city = isset($_REQUEST['vpnOrgCity']) ? $_REQUEST['vpnOrgCity'] : ""; 
-		$proto_type = isset($_REQUEST['vpnProtoType']) ? $_REQUEST['vpnProtoType'] : "udp";
-      $auth_type = isset($_REQUEST['vpnAuthType']) ? $_REQUEST['vpnAuthType'] : "CERT_PASS";
-		$srv_port = isset($_REQUEST['vpnListenPort']) ? $_REQUEST['vpnListenPort'] : "";
-      $mng_port = isset($_REQUEST['vpnManagePort']) ? $_REQUEST['vpnManagePort'] : "";
-      $net_addr = isset($_REQUEST['vpnNetAddr']) ? $_REQUEST['vpnNetAddr'] : "";
-      $net_mask = isset($_REQUEST['vpnNetMask']) ? $_REQUEST['vpnNetMask'] : "";
+      */
+		$this->fields['proto_type'] = isset($_REQUEST['vpnProtoType']) ? $_REQUEST['vpnProtoType'] : "udp";
+      $this->fields['auth_type'] = isset($_REQUEST['vpnAuthType']) ? $_REQUEST['vpnAuthType'] : "CERT_PASS";
+		$this->fields['srv_port'] = isset($_REQUEST['vpnListenPort']) ? $_REQUEST['vpnListenPort'] : "";
+      $this->fields['mng_port'] = isset($_REQUEST['vpnManagePort']) ? $_REQUEST['vpnManagePort'] : "";
+      $this->fields['net_addr'] = isset($_REQUEST['vpnNetAddr']) ? $_REQUEST['vpnNetAddr'] : "";
+      $this->fields['net_mask'] = isset($_REQUEST['vpnNetMask']) ? $_REQUEST['vpnNetMask'] : "";
       
       $query = $DB->prepare(
-         "UPDATE vpn SET description=?,org_name=?,org_unit=?,org_mail=?," .
-         "org_country=?,org_prov=?,org_city=?,proto_type=?," . 
-         "auth_type=?,srv_port=?,mng_port=?,net_addr=?,net_mask=? " .
-         "WHERE id = ?");
+         "UPDATE vpn SET description=?,proto_type=?,auth_type=?,srv_port=?,mng_port=?,net_addr=?,net_mask=? WHERE id = ?");
       
-      $res = $query->execute(array($descr,$org_name,$org_unit,$org_mail,$org_country,$org_prov,$org_city,$proto_type,$auth_type,$srv_port,$mng_port,$net_addr,$net_mask,$vpn_id));
+      $res = $query->execute(array($this->fields['description'],
+                                   $this->fields['proto_type'],
+                                   $this->fields['auth_type'],
+                                   $this->fields['srv_port'],
+                                   $this->fields['mng_port'],
+                                   $this->fields['net_addr'],
+                                   $this->fields['net_mask'],
+                                   $this->fields['id']));
 			
-		if (!$res)
+      if (!$res)
       {
          $this->response['error'] = "query error";
+         return;
       }
-      else
+  
+      // re-create openvpn server configuration file
+      $lines = $this->makeSrvCfg();
+      
+      if ($lines == false)
       {
-         $this->response['error'] = "vpn updated!";
-         $this->response['result'] = true;
+         return;
       }
+      
+      // write configuration file
+      if ($this->writeSrvCfg($lines) == false)
+      {
+         return;
+      }
+      
+      // re-create ovpnctrl config file
+      /*
+      if (!$this->makeOvpnctrlConf())
+      {
+         return;
+      }
+      */
+      
+      // re-create script_up.sh
+      if (!$this->makeStartUpScript())
+      {
+         return;
+      }
+      
+      // re-create script_down.sh
+      if (!$this->makeDownScript())
+      {
+         return ;
+      }
+
+      $this->response['error'] = "vpn updated!";
+      $this->response['result'] = true;
    }
    
    /********************************************************
@@ -1486,6 +1525,7 @@ class VpnController extends Controller
    function urlif_savecfg()
    {
       global $_REQUEST;
+      global $DB;
       
       if (!isset($_REQUEST['content']) || 
           !isset($_REQUEST['id']))
@@ -1495,12 +1535,61 @@ class VpnController extends Controller
       }
       
       $lines = explode("\n", $_REQUEST['content']);
+      $res = false;
       
-      if (!$this->writeSrvCfg($lines))
+      if ($this->writeSrvCfg($lines))
+      {
+         // sychronize database vpn data with modified configuration
+         foreach ($lines as $line)
+         {
+            if (empty($line) || $line[0] == '#')
+            {
+               continue;
+            }
+            
+            $tmp1 = "";
+            $tmp2 = "";
+            
+            if (sscanf($line, "proto %s", $tmp1) == 1)
+            {
+               $this->fields['proto_type'] = $tmp1;
+            }
+            else if (sscanf($line, "port %d", $tmp1) == 1)
+            {
+               $this->fields['srv_port'] = $tmp1;
+            }
+            else if (sscanf($line, "management %s %d", $tmp1, $tmp2) == 2)
+            {
+               $this->fields['mng_port'] = $tmp2;
+            }
+            else if (sscanf($line, "server %s %s", $tmp1, $tmp2) == 2)
+            {
+               $this->fields['net_addr'] = $tmp1;
+               $this->fields['net_mask'] = $tmp2;
+            }
+         }
+         
+         // update db
+         $query = $DB->prepare("UPDATE vpn SET proto_type = ?, srv_port = ?, mng_port = ?, net_addr = ?, net_mask = ? WHERE id = ?");
+         $res = $query->execute(array($this->fields['proto_type'],
+                               $this->fields['srv_port'],
+                               $this->fields['mng_port'],
+                               $this->fields['net_addr'],
+                               $this->fields['net_mask'],
+                               $this->fields['id']));
+                               
+         if (!$res)
+         {
+            $this->response['error'] = "update query error";
+            return;
+         }
+      }
+      else
       {
          $this->response['error'] = "cannot write configuration";
          return;
       }
+      
       
       $this->response['result'] = true;
       $this->response['error'] = "server configuration updated";    

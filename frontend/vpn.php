@@ -100,8 +100,10 @@
    
    <div class="panel-body" id="vpnCfgEditor" title="Edit VPN">
       <form role="form" action="VpnController.php" method="post" id="vpnCfgEditForm">
-         <!--<input type="hidden" name="action">-->
-         <input type="hidden" name="id">
+         <!--
+         <input type="hidden" name="action" id="cfgedit_action">
+         <input type="hidden" name="id" id="cfgedit_id">
+         -->
          <table class="table">
          <tr>
             <td>
@@ -316,8 +318,8 @@
    
    function saveVpnCfg()
    {    
-      //$('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
-		$.post("VpnController.php?action=savecfg", $('#vpnCfgEditForm').serialize(), showResult);
+      var urlreq = "VpnController.php?action=savecfg&id=" + $('input[name=id]').val();
+	  $.post(urlreq, $('#vpnCfgEditForm').serialize(), showResult);
       $('#vpnFormCfg').dialog('close');
    }
    
@@ -334,7 +336,7 @@
       $('#vpnForm').dialog('close');
       $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
       
-      alert($('#vpnEditForm').serialize());
+      //alert($('#vpnEditForm').serialize());
       
       if ((action == 'update') && confirm("Save configuration?"))
 		{
@@ -386,9 +388,19 @@
       }
       else
       {
+         $('input[name=vpnOrgName]').attr('readonly', 'readonly');
+         $('input[name=vpnOrgUnit]').attr('readonly', 'readonly');
+         $('input[name=vpnOrgMail]').attr('readonly', 'readonly');
+         $('input[name=vpnOrgCountry]').attr('readonly', 'readonly');
+         $('input[name=vpnOrgProv]').attr('readonly', 'readonly');
+         $('input[name=vpnOrgCity]').attr('readonly', 'readonly');
+         
          requrl = "VpnController.php?action=edit&id="+id,
          $('input[name=action]').val("update");
          $('input[name=id]').val(id);
+         
+         //$('#cfgedit_action').val("savecfg");
+         //$('#cfgedit_id').val(id);
       }
       
 		$.ajax({
