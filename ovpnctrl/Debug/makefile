@@ -53,7 +53,7 @@ ovpnctrl: $(OBJS) $(USER_OBJS)
 	@echo ' '
 
 install: all
-   chmod +x ./ovpnctrl
+	chmod +x ./ovpnctrl
 	cp ./ovpnctrl ../../vpn/bin/ovpnctrl
 
 clean:
