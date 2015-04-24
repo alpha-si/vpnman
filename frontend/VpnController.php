@@ -1729,11 +1729,13 @@ class VpnController extends Controller
          }
          
          // if vpn is down force all vpn account to unknown status
+         /*
          if ($this->response['status'] == 'NOT RUNNING')
          {
             $query = $DB->prepare("UPDATE accounts SET status = 'DISCONNECTED' WHERE vpn_id=?");
             $query->execute(array($_SESSION['sess_vpn_id']));
          }
+         */
       }
       
 		$this->response['result'] = true;

@@ -72,7 +72,7 @@ case "$1" in
 	      
 	cd $work
 
-   	$openvpn --daemon --writepid $openvpn_pidf --cd $work --config $cfg
+   	$openvpn --daemon --writepid $openvpn_pidf --config $cfg > /dev/null
        
    	if [ $? = 0 ]; then
       		echo $"success";

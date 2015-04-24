@@ -25,7 +25,7 @@ int OvpnResponseMng::findUserId( const char* p_acUsername )
 	char l_acQuery[128];
 	int l_iUserId;
 
-	sprintf( l_acQuery, "SELECT id FROM accounts WHERE username = '%s'", p_acUsername );
+	sprintf( l_acQuery, "SELECT id FROM accounts WHERE username = '%s' AND vpn_id = '%d'", p_acUsername, g_iVpnId );
 
 	if (g_Db.ExecuteScalar(l_acQuery, l_iUserId) == false)
 	{
@@ -150,8 +150,9 @@ void OvpnResponseMng::handleClientConnect( ClientNotification& l_Client )
 			if (l_Client.GetType() != CLIENT_NOTIFICATION_REAUTH)
 			{
 				sprintf(l_acString,
-					"UPDATE accounts SET status = 'CONNECTING' WHERE username = '%s'",
-					l_acUsername );
+					"UPDATE accounts SET status = 'CONNECTING' WHERE username = '%s' AND vpn_id = '%d'",
+					l_acUsername,
+               g_iVpnId );
 
 				// update accounts table
 				g_Db.ExecuteUpdate(l_acString);
@@ -196,7 +197,7 @@ void OvpnResponseMng::handleClientEstablished( ClientNotification& l_Client )
 	std::string l_Resp;
 	int l_iUserId;
    MYSQL_RES* l_pResSet;
-	MYSQL_ROW l_pResRow;
+   //MYSQL_ROW l_pResRow;
 
    l_acUsername[0] = 0;
    
@@ -214,8 +215,9 @@ void OvpnResponseMng::handleClientEstablished( ClientNotification& l_Client )
 		l_iUserId = findUserId(l_acUsername);
 
 		sprintf(l_acString,
-				"UPDATE accounts SET status = 'ESTABLISHED' WHERE username = '%s'",
-				l_acUsername );
+				"UPDATE accounts SET status = 'ESTABLISHED' WHERE username = '%s' AND vpn_id = '%d'",
+				l_acUsername,
+            g_iVpnId );
 
 		// update accounts table
 		g_Db.ExecuteUpdate(l_acString);
@@ -290,8 +292,9 @@ void OvpnResponseMng::handleClientDisconnect( ClientNotification& l_Client )
 		l_iUserId = findUserId(l_acUsername);
 
 		sprintf(l_acString,
-				"UPDATE accounts SET status = 'DISCONNECTED' WHERE username = '%s'",
-				l_acUsername );
+				"UPDATE accounts SET status = 'DISCONNECTED' WHERE username = '%s' AND vpn_id = '%d'",
+				l_acUsername,
+            g_iVpnId );
 
 		// update accounts table
 		g_Db.ExecuteUpdate(l_acString);
@@ -392,7 +395,7 @@ void OvpnResponseMng::handleBytecountNotification( LinesVector& p_Resp )
 
 
 		sprintf( l_acBuf,
-				 "UPDATE connection_history SET bytes_received = '%llu', bytes_sent = '%llu' WHERE cid = '%d' AND vpn_id = '%d' AND end_time IS NULL",
+			 "UPDATE connection_history SET bytes_received = '%lu', bytes_sent = '%lu' WHERE cid = '%d' AND vpn_id = '%d' AND end_time IS NULL",
 				 l_ullBytesRx,
 				 l_ullBytesTx,
 				 l_iCID,
@@ -413,37 +416,17 @@ void OvpnResponseMng::handleCmdStats( LinesVector& p_Resp )
 	if (p_Resp.size() > 0)
 	{
 		l_iRes = sscanf( p_Resp[0].c_str(),
-						 "SUCCESS: nclients=%d,bytesin=%llu,bytesout=%llu",
+						 "SUCCESS: nclients=%d,bytesin=%lu,bytesout=%lu",
 						 &l_iClients,
 						 &l_ullRx,
 						 &l_ullTx );
 
 		if (l_iRes == 3)
 		{
-			sprintf(l_acQuery, "UPDATE server_info SET value = '%d' WHERE attribute = 'nclients' AND vpn_id = '%d'", l_iClients, g_iVpnId);
-
-			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
-			{
-				sprintf(l_acQuery, "INSERT INTO server_info VALUES('nclients','%d','%d')", l_iClients, g_iVpnId);
-				g_Db.ExecuteUpdate(l_acQuery);
-			}
-
-			sprintf(l_acQuery, "UPDATE server_info SET value = '%llu' WHERE attribute = 'bytesin' AND vpn_id = '%d'", l_ullRx, g_iVpnId);
-
-			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
-			{
-				sprintf(l_acQuery, "INSERT INTO server_info VALUES('bytesin','%llu','%d')", l_ullRx, g_iVpnId);
-				g_Db.ExecuteUpdate(l_acQuery);
-			}
-
-			sprintf(l_acQuery, "UPDATE server_info SET value = '%llu' WHERE attribute = 'bytesout' AND vpn_id = '%d'", l_ullTx, g_iVpnId);
-
-			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
-			{
-				sprintf(l_acQuery, "INSERT INTO server_info VALUES('bytesout','%llu','%d')", l_ullTx, g_iVpnId);
-				g_Db.ExecuteUpdate(l_acQuery);
-			}
-         
+         UpdateAttribute("nclients", l_iClients, g_iVpnId);
+         UpdateAttribute("bytesin", l_ullRx, g_iVpnId);
+         UpdateAttribute("bytesout", l_ullTx, g_iVpnId);
+ 
          sprintf( l_acQuery, "UPDATE server_info SET value = DATE_FORMAT(NOW(), '%%Y-%%m-%%d %%T') WHERE vpn_id = '%d' AND attribute = 'keepalive'", g_iVpnId );
 
 			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
@@ -465,7 +448,6 @@ void OvpnResponseMng::handleCmdPid( LinesVector& p_Resp )
 {
 	int l_iRes;
 	int l_iPid;
-	char l_acQuery[256];
 
 	if (p_Resp.size() > 0)
 	{
@@ -473,13 +455,7 @@ void OvpnResponseMng::handleCmdPid( LinesVector& p_Resp )
 
 		if (l_iRes == 1)
 		{
-			sprintf(l_acQuery, "UPDATE server_info SET value = '%d' WHERE attribute = 'pid' AND vpn_id = '%d'", l_iPid, g_iVpnId);
-
-			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
-			{
-				sprintf(l_acQuery, "INSERT INTO server_info VALUES('pid','%d','%d')", l_iPid, g_iVpnId);
-				g_Db.ExecuteUpdate(l_acQuery);
-			}
+         UpdateAttribute("pid", l_iPid, g_iVpnId);
 		}
 		else
 		{
@@ -492,7 +468,6 @@ void OvpnResponseMng::handleCmdVersion( LinesVector& p_Resp )
 {
 	int l_iRes;
 	char l_acBuf[1024];
-	char l_acQuery[1024];
 
 	if (p_Resp.size() > 0)
 	{
@@ -500,26 +475,14 @@ void OvpnResponseMng::handleCmdVersion( LinesVector& p_Resp )
 
 		if (l_iRes == 1)
 		{
-			sprintf(l_acQuery, "UPDATE server_info SET value = '%s' WHERE attribute = 'server_ver' AND vpn_id = '%d'", l_acBuf, g_iVpnId);
-
-			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
-			{
-				sprintf(l_acQuery, "INSERT INTO server_info VALUES('server_ver','%s','%d')", l_acBuf, g_iVpnId);
-				g_Db.ExecuteUpdate(l_acQuery);
-			}
+         UpdateAttribute("server_ver", l_acBuf, g_iVpnId);
 		}
 
 		l_iRes = sscanf( p_Resp[1].c_str(), "Management Version: %s", l_acBuf );
 
 		if (l_iRes == 1)
 		{
-			sprintf(l_acQuery, "UPDATE server_info SET value = '%s' WHERE attribute = 'management_ver' AND vpn_id = '%d'", l_acBuf, g_iVpnId);
-
-			if (g_Db.ExecuteUpdate(l_acQuery) == 0)
-			{
-				sprintf(l_acQuery, "INSERT INTO server_info VALUES('management_ver','%s','%d')", l_acBuf, g_iVpnId);
-				g_Db.ExecuteUpdate(l_acQuery);
-			}
+         UpdateAttribute("management_ver", l_acBuf, g_iVpnId);
 		}
 	}
 }
@@ -644,8 +607,9 @@ void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
       }
 
 		sprintf(l_acQuery,
-				"UPDATE accounts SET status = 'ESTABLISHED' WHERE username = '%s'",
-				l_Values[0].c_str() );
+				"UPDATE accounts SET status = 'ESTABLISHED' WHERE username = '%s' AND vpn_id = '%d'",
+				l_Values[0].c_str(),
+            g_iVpnId );
 
 		// update accounts table
 		g_Db.ExecuteUpdate(l_acQuery);
@@ -709,7 +673,8 @@ void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
 		
 	// selects all accounts which have the connection in DISCONNECTED state
 	sprintf(l_acQuery,
-			"SELECT accounts.id, connection_history.id FROM accounts, connection_history WHERE accounts.id = connection_history.user_id AND accounts.status = 'DISCONNECTED' AND connection_history.end_time IS NULL");
+			  "SELECT accounts.id, connection_history.id FROM accounts, connection_history WHERE connection_history.vpn_id = '%d' AND accounts.id = connection_history.user_id AND accounts.status = 'DISCONNECTED' AND connection_history.end_time IS NULL",
+           g_iVpnId );
 
 	l_pResSet = g_Db.ExecuteQuery(l_acQuery);
 
@@ -725,8 +690,9 @@ void OvpnResponseMng::handleCmdStatus( LinesVector& p_Resp )
 				 l_pResRow[1]);				 
 
 		sprintf(l_acQuery,
-				"UPDATE accounts SET status = 'DISCONNECTED' WHERE id = '%s'",
-				l_acUserId );
+				"UPDATE accounts SET status = 'DISCONNECTED' WHERE id = '%s' AND vpn_id = '%d'",
+				l_acUserId,
+            g_iVpnId);
 
 		// update accounts table
 		g_Db.ExecuteUpdate(l_acQuery);
@@ -848,3 +814,49 @@ bool OvpnResponseMng::SendCommand( int p_iCmdType )
 	return l_boRes;
 }
 
+bool OvpnResponseMng::UpdateAttribute(const char* p_acAttrName, uint64_t p_ullAttrValue, int p_iVpnId)
+{
+   char l_acAttrValue[32];
+   sprintf(l_acAttrValue, "%lu", p_ullAttrValue);
+
+   return UpdateAttribute(p_acAttrName, l_acAttrValue, p_iVpnId);
+}
+
+bool OvpnResponseMng::UpdateAttribute(const char* p_acAttrName, int p_iAttrValue, int p_iVpnId)
+{
+   char l_acAttrValue[32];
+   sprintf(l_acAttrValue, "%d", p_iAttrValue);
+   
+   return UpdateAttribute(p_acAttrName, l_acAttrValue, p_iVpnId);
+}
+
+bool OvpnResponseMng::UpdateAttribute(const char* p_acAttrName, const char* p_acAttrValue, int p_iVpnId)
+{
+   char l_acQuery[256];
+   int l_iResult = 0;
+   bool l_boRet = false;
+   
+   sprintf(l_acQuery, "SELECT COUNT(*) FROM server_info WHERE attribute = '%s' AND vpn_id = '%d'", p_acAttrName, p_iVpnId);
+   
+   // check if attribute exists
+   if (g_Db.ExecuteScalar(l_acQuery, l_iResult))
+   {
+      if (l_iResult == 0)
+      {
+         // insert attribute
+         sprintf(l_acQuery, "INSERT INTO server_info VALUES('%s','%s','%d')", p_acAttrName, p_acAttrValue, g_iVpnId);
+      }
+      else
+      {
+         // update attribute
+         sprintf(l_acQuery, "UPDATE server_info SET value = '%s' WHERE attribute = '%s' AND vpn_id = '%d'", p_acAttrName, p_acAttrValue, p_iVpnId);
+      }
+      
+      g_Db.ExecuteUpdate(l_acQuery);
+      
+      l_boRet = true;
+   }
+   
+   return l_boRet; 
+}
+ 

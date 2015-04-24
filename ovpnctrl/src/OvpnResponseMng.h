@@ -14,13 +14,13 @@
 
 //#include <string>
 
-#define NO_COMMAND					0xffff
-#define RESP_TYPE_UNKNOWN			0
+#define NO_COMMAND					   0xffff
+#define RESP_TYPE_UNKNOWN			   0
 #define RESP_TYPE_CMD_STATE			1
-#define RESP_TYPE_CMD_STATUS		2
-#define RESP_TYPE_CMD_VERSION		3
+#define RESP_TYPE_CMD_STATUS		   2
+#define RESP_TYPE_CMD_VERSION		   3
 #define RESP_TYPE_CMD_STATS			4
-#define RESP_TYPE_CMD_PID			5
+#define RESP_TYPE_CMD_PID			   5
 #define RESP_TYPE_NOTIF_CLIENT		6
 #define RESP_TYPE_NOTIF_BYTECOUNT	7
 
@@ -55,6 +55,9 @@ public:
 	inline void SetOvpnIf( OvpnMng* p_pOvpnIf ) { m_pOvpnIf = p_pOvpnIf; }
 	bool SendCommand( int p_iCmdType );
 	void HandleNextResponse( void );
+   bool UpdateAttribute(const char* p_acAttrName, uint64_t p_ullAttrValue, int p_iVpnId);
+   bool UpdateAttribute(const char* p_acAttrName, int p_iAttrValue, int p_iVpnId);
+   bool UpdateAttribute(const char* p_acAttrName, const char* p_acAttrValue, int p_iVpnId);
 };
 
 #endif /* OVPNRESPONSEMNG_H_ */
