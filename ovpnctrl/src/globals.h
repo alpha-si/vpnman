@@ -20,7 +20,7 @@
 #include "CfgMng.h"
 #include "OvpnMng.h"
 
-#define OVPNCTRL_VERSION   "v0.0.4"
+#define OVPNCTRL_VERSION   "v0.0.5"
 
 extern CfgMng 	g_Cfg;
 extern DbDrv	g_Db;
