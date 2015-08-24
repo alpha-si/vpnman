@@ -318,7 +318,7 @@
             $('input[name=coordinates]').val(values['coordinates']);
             $('input[name=links]').val(values['links']);
             $('input[name=enabled]').attr('checked', (values['enabled'] == 1));
-            $('input[name=auth_type]').val(values['auth_type']);
+            $('select[name=auth_type]').val(values['auth_type']);
             $('input[name=action]').val("update");
             $( "#accForm" ).dialog("open");
          }
