@@ -1,3 +1,5 @@
+var vpnRefreshStatusTimer;
+
 function parseXmlData(req)
 {
 	data = new Array();
@@ -28,13 +30,13 @@ function refreshVpnStatus()
             
             if (values['status'] == 'RUNNING')
             {
-               $("#vpnStatus").removeClass("btn-danger").addClass("btn-success");
+               $("#vpnStatus").removeClass("btn-danger btn-warning").addClass("btn-success");
                link = "javascript:controlVpn('stop','" + values['id'] + "')";
                $("#vpnStatus").attr("onclick", link);
             }
             else
             {  
-               $("#vpnStatus").removeClass("btn-success").addClass("btn-danger");
+               $("#vpnStatus").removeClass("btn-success btm-warning").addClass("btn-danger");
                link = "javascript:controlVpn('start','" + values['id'] + "')";
                $("#vpnStatus").attr("onclick", link);
             }
@@ -48,7 +50,7 @@ function refreshVpnStatus()
 		},
 		complete: function() {
 			// Schedule the next request when the current one's complete
-			setTimeout(refreshVpnStatus, 2000);
+			vpnRefreshStatusTimer = setTimeout(refreshVpnStatus, 2000);
 		},
 		error : function (richiesta,stato,errori) {
 			//alert("E' evvenuto un errore: refreshVpnStatus = " + stato);
@@ -60,6 +62,11 @@ function controlVpn(action,id)
 {
    ajaxurl = "VpnController.php?action=" + action + "&id=" + id;
 
+   clearTimeout(vpnRefreshStatusTimer);
+   
+   $("#vpnStatus").removeClass("btn-danger btn-success").addClass("btn-warning");
+   $("#vpnStatus").text(action.toUpperCase() + "...");
+   
    $.ajax({
       url : ajaxurl,
       beforeSend : function () {
@@ -70,11 +77,16 @@ function controlVpn(action,id)
       },
       success : function (data,stato) {
 		values = parseXmlData(data);       
+         if (values['result'] != 1)
+         {
          alert(values['error']);
+         }
       },
       error : function (richiesta,stato,errori) {
       }
    });
+   
+   vpnRefreshStatusTimer = setTimeout(refreshVpnStatus, 10000);
 }
 
 function refreshNodesStatus()
