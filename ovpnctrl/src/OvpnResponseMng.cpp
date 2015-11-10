@@ -96,7 +96,7 @@ void OvpnResponseMng::handleClientConnect( ClientNotification& l_Client )
       {
          // find iroute networks
          sprintf(l_acString,
-               "SELECT network,netmask,mapped_to FROM networks AS n, accounts AS u WHERE n.user_id = u.id AND n.vpn_id = '%d' AND u.username = '%s'",
+					"SELECT network,netmask,mapped_to FROM networks AS n, accounts AS u WHERE n.user_id = u.id AND n.vpn_id = '%d' AND n.enabled = '1' AND u.username = '%s'",
                g_iVpnId,
                l_acUsername);
 
@@ -128,7 +128,7 @@ void OvpnResponseMng::handleClientConnect( ClientNotification& l_Client )
 
          // find push networks
          sprintf( l_acString,
-               "SELECT network,netmask FROM networks AS n LEFT JOIN accounts AS a ON n.user_id = a.id WHERE n.vpn_id = '%d' AND n.enabled = '0' AND ((n.user_id IS NULL) OR (a.status = 'ESTABLISHED'))",
+               "SELECT network,netmask FROM networks AS n LEFT JOIN accounts AS a ON n.user_id = a.id WHERE n.vpn_id = '%d' AND n.enabled = '1'",
                g_iVpnId );
 
          l_pResSet = g_Db.ExecuteQuery(l_acString);

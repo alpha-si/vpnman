@@ -75,7 +75,7 @@ class VpnController extends Controller
       
       // check if logged user is allowed
       $query = $DB->prepare("SELECT role FROM user2vpn WHERE vpn_id = ? AND user_id = ?");
-      $query->execute(array($_SESSION['sess_user_id'], $value));
+      $query->execute(array($value, $_SESSION['sess_user_id']));
       
       if ($role = $query->fetch(PDO::FETCH_NUM))
       {
@@ -231,6 +231,22 @@ class VpnController extends Controller
    }
    
    /********************************************************
+   Validate log offset value
+   *********************************************************/
+   protected function validate_offset($value, $action)
+   {
+      return true;
+   }
+   
+   /********************************************************
+   Validate log type value
+   *********************************************************/
+   protected function validate_logtype($value, $action)
+   {
+      return true;
+   }
+   
+   /********************************************************
    Class constructor
    *********************************************************/
    function __construct($id = NULL)
@@ -381,6 +397,17 @@ class VpnController extends Controller
          return false;
       }
        
+      // build environment array
+      $env = array_merge($VPNMAN_GLOBAL_CONFIG, $this->fields);
+      
+      //$this->errstr = implode(", ",array_keys($env));
+      //return false;
+      
+      // parse template
+      $c = implode("\n",$lines);
+      parseTemplate($env, $c);
+      $lines = explode("\n",$c);
+      
       return $lines;
    }
    
@@ -1864,6 +1891,51 @@ class VpnController extends Controller
          $_SESSION['sess_vpn_id'] = $_REQUEST['id'];
          session_write_close();
       }
+   }
+   
+   function urlif_getlog()
+   {
+      $logfile = $this->fields['vpn_home_dir'] . "/../log/vpn" . $this->fields['id'];
+      
+      if ($_REQUEST['logtype'] == 'openvpn')
+      {
+         $logfile .= "_srv.log";
+      }
+      else
+      {
+         $logfile .= "_ctrl.log";
+      }
+   
+      //session_start();
+      $handle = fopen($logfile, 'r');
+      
+      if ($handle)
+      {
+         if (!isset($_REQUEST['offset']))
+         {
+            fseek($handle, -1024, SEEK_END);
+            fgets($handle);
+            $offset = ftell($handle);
+         }
+         else
+         {
+            $offset = $_REQUEST['offset'];
+         }
+         
+         $data = nl2br(stream_get_contents($handle, 1024, $offset));
+
+         $this->response['seek'] = ftell($handle);
+         $this->response['error'] = "none";
+         $this->response['html'] = $data; 
+         $this->response['result'] = true;
+         
+         fclose($handle);
+      }
+      else
+      {
+         $this->response['error'] = "fopen \"" . $logfile . "\" failed";
+         $this->response['result'] = false;
+      } 
    }
 }
 

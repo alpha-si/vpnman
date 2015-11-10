@@ -18,7 +18,9 @@
     <link href="css/plugins/timeline/timeline.css" rel="stylesheet">
 
     <!-- SB Admin CSS - Include with every page -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
     <link href="css/sb-admin.css" rel="stylesheet">
+    <link href="css/logtail.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
@@ -30,7 +32,7 @@
         <div id="page-wrapper">
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">Connections History</h1>
+                    <h1 class="page-header">Log</h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -38,11 +40,15 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
-                        <div class="panel-heading">
-                            Sessions:
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
+                    <!---------------------------------------------->
+                    <div id="tabs">
+                       <ul>
+                         <li><a href="#sessions">Sessions</a></li>
+                         <li><a href="#openvpnlog">OpenVPN Log</a></li>
+                         <li><a href="#ovpnctrllog">Ovpnctrl Log</a></li>
+                       </ul>
+                        <!-------------------- SESSIONS TAB -------------------------->
+                        <div id="sessions" class="panel-body">
                             <div class="dataTable_wrapper">
                                 <table class="table table-striped table-bordered table-hover small" id="dataTables-example">
                                     <thead>
@@ -102,6 +108,25 @@
                             <!-- /.table-responsive -->
                         </div>
                         <!-- /.panel-body -->
+                        
+                        <!-------------------- OpenvpnLog TAB -------------------------->
+                        <div id="openvpnlog" class="panel-body">
+                        <!--
+                           <div id="header">
+                              js-logtail.
+                              <a href="./">Reversed</a> or
+                              <a href="./?noreverse">chronological</a> view.
+                              <a id="pause" href='#'>Pause</a>.
+                          </div>
+                          -->
+                          <pre id="openvpnlog-data"></pre>
+                        </div>
+
+                        <!-------------------- OvpnctrlLog TAB -------------------------->
+                        <div id="ovpnctrllog" class="panel-body">
+                           <pre id="ovpnctrllog-data"></pre>
+                        </div>
+                        
                     </div>
                     <!-- /.panel -->
                 </div>
@@ -120,6 +145,7 @@
     <!-- Page-Level Plugin Scripts - Dashboard -->
     <!--<script src="js/plugins/morris/raphael-2.1.0.min.js"></script>
     <script src="js/plugins/morris/morris.js"></script>-->
+    <script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
     
     <!-- DataTables JavaScript -->
     <script src="js/plugins/dataTables/jquery.dataTables.js"></script>
@@ -131,16 +157,80 @@
     <!-- Page-Level Demo Scripts - Dashboard - Use for reference -->
 	<script src="js/reman-vpn.js"></script>
    
-   <!-- Custom Theme JavaScript -->
-   <!--<script src="js/sb-admin-2.js"></script>-->
-
    <!-- Page-Level Demo Scripts - Tables - Use for reference -->
 	<script type="text/javascript">
-   $(document).ready(function() {
-      $('#dataTables-example').DataTable({
-                responsive: true
+
+   var logstate = 
+      [{
+         logtype:'openvpn', 
+         logelem:'#openvpnlog-data', 
+         logseek:0,
+      }, {
+         logtype:'ovpnctrl', 
+         logelem:'#ovpnctrllog-data', 
+         logseek:0,
+      }];
+   
+   function getLogContent(vpn_id, log_state)
+   {  
+      var logurl = "VpnController.php?action=getlog&id=" + vpn_id + "&logtype=" + log_state.logtype;
+
+      if (log_state.logseek > 0)
+      {
+         logurl += "&offset=" + log_state.logseek;
+      }
+//alert(logurl);
+      $.ajax({
+		url : logurl,
+		success : function (data,stato) {
+			if (data != null && data !== undefined && typeof data == 'object') 
+			{
+            values = parseXmlData(data);
+
+            if (values['result'])
+            { 
+               log_state.logseek = values['seek'];
+               $(log_state.logelem).append(values['html']);
+            }
+            else
+            {
+               $(log_state.logelem).append(values['error'] + "<br>");
+            }
+			}
+		},
+		complete: function() {
+			// Schedule the next request when the current one's complete
+			setTimeout(updateLogContent, 5000);
+		},
+		error : function (richiesta,stato,errori) {
+			//alert("E' evvenuto un errore: refreshVpnStatus = " + stato);
+		}
+		});
+   }
+   
+   function updateLogContent()
+   {
+      var id = <?php echo $_SESSION['sess_vpn_id']; ?>;
+      var active = $( "#tabs" ).tabs( "option", "active" );
+
+      if (active == 1)
+      {
+         // update openvpn log content
+         getLogContent(id, logstate[0]);
+      }
+      else if (active == 2)
+      {
+         // update ovpnctrl log content
+         getLogContent(id, logstate[1]);
+      }
+   }
+   
+    $(function() {
+       $( "#tabs" ).tabs({
+         activate: updateLogContent,
       });
    });		
+   
 	</script>
 
 </body>

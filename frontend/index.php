@@ -37,6 +37,7 @@
 			</div>
 			<!-- /.row -->
 			<div class="row">
+            <div id="busy1" class="square"></div>
 				<div class="col-lg-8">
 					<div class="panel panel-default">
 						<div id="map_canvas" style="height:395px"></div>
@@ -148,19 +149,22 @@
 	<script src="js/jquery-ui-map/ui/min/jquery.ui.map.full.min.js" type="text/javascript"></script>
 	<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
 	<script src="js/reman-vpn.js"></script>
+   <script src="js/waiting.js"></script>
 	
 	<script type="text/javascript">
 		function createMapMarkers(ev, map) 
 		{
+         //map.setCenter(new google.maps.LatLng(37.4419, -122.1419));
 			$.ajax({
 			url : "VpnController.php?action=getgpspos",
 			success : function (data,stato) {
 				if (data != null && data !== undefined && typeof data == 'object') 
 				{
+               var marker;
 					values = parseXmlData(data);
 					for (var username in values)
 					{
-                  var marker = new google.maps.Marker();
+                  marker = new google.maps.Marker();
                    marker = {
                        position: values[username],
                        title: username,
@@ -171,16 +175,21 @@
 
 						$('#map_canvas').gmap('addMarker', marker);
 					}
+
+               //var yourStartLatLng = values['videosal-router'];
+               //$('#map_canvas').gmap({'zoom': 8});
 				}
 			},
 			error : function (richiesta,stato,errori) {
 				//alert("E' evvenuto un errore: createMapMarkers = " + stato);
 			}
 			});
-			
 		}
 		
         $(function() {
+            var yourStartLatLng = new google.maps.LatLng(43.675914, 10.555897);
+				$('#map_canvas').gmap({'center': yourStartLatLng, 'zoom': 3}).bind('init', createMapMarkers);
+				
 				$('#map_canvas').gmap().bind('init', createMapMarkers);
 				
 				$('#about').dialog({

@@ -857,8 +857,8 @@ class AccountController extends Controller
       
       $lines[$i++] = "";
       $lines[$i++] = "### auto-generated ###";
-      $lines[$i++] = "up %FILEPATH%/$upscript";
-      $lines[$i++] = "down %FILEPATH%/$downscript";
+      $lines[$i++] = "up %FILEPATH%/../scripts/$upscript";
+      $lines[$i++] = "down %FILEPATH%/../scripts/$downscript";
       $lines[$i++] = "ca %FILEPATH%/$cafilename";
       
       switch ($this->fields['auth_type'])
@@ -938,7 +938,7 @@ class AccountController extends Controller
       // 
       // add up script to the xml
       //
-      
+      /*
       $filename = $VPNMAN_GLOBAL_CONFIG['VPN_ROOT_PATH'] . "bin/node_up_script.sh";
       if (file_exists($filename) && ($content = file_get_contents($filename)))
       {
@@ -972,7 +972,7 @@ class AccountController extends Controller
          $this->response['error'] = "[downloadWrtCfg] unable to read " . $filename; 
          $result = false;
       }
-      
+      */
       if ($this->fields['auth_type'] != 'CERT_ONLY')
       {
          $content = $this->fields['username'] . "\n" . $this->fields['passwd'];

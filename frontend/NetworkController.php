@@ -63,6 +63,12 @@ class NetworkController extends Controller
    {
       global $DB;
       
+      if ($value == 0)
+      {
+         // ok, user is openvpn server
+         return true;
+      }
+      
       $query = $DB->prepare("SELECT * FROM accounts WHERE id = ?");
       $query->execute(array($value));
       
@@ -138,7 +144,7 @@ class NetworkController extends Controller
    function urlif_nodelist()
 	{
       global $DB;
-      $html = "";
+      $html = "<option value='0'>OpenVPN Server</option>";
       
       if (isset($_SESSION['sess_vpn_id']))
       {
@@ -173,6 +179,11 @@ class NetworkController extends Controller
 			{
             foreach ($row as $key => $value)
             {
+               if (($key == 'user_id') && (empty($value)))
+               {
+                  $value = 0;
+               }
+               
                $this->response[$key] = $value;
             }
             
@@ -272,7 +283,7 @@ class NetworkController extends Controller
 		}
 		
       $values = array();
-      $values[0] = $_REQUEST['user_id'];
+      $values[0] = $_REQUEST['user_id'] > 0 ? $_REQUEST['user_id'] : null;
 		$values[1] = $_REQUEST['network']; 
 		$values[2] = $_REQUEST['netmask'];
 		$values[3] = isset($_REQUEST['description']) ? $_REQUEST['description'] : "";
@@ -289,7 +300,8 @@ class NetworkController extends Controller
       }
       else
       {
-         $this->response['error'] = "execute query error";
+         $errors = $query->errorInfo();
+         $this->response['error'] = "execute query error: " . $errors[2];
       }
 	}
    
@@ -336,7 +348,7 @@ class NetworkController extends Controller
       }
       else
       {
-         $query = $DB->prepare("SELECT n.id,n.network,n.netmask,a.username,n.mapped_to,a.status,n.enabled,n.description FROM networks AS n, accounts AS a WHERE n.user_id = a.id AND a.vpn_id = ?");
+         $query = $DB->prepare("SELECT n.id,n.network,n.netmask,IFNULL(a.username,'SERVER'),n.mapped_to,IFNULL(a.status,'ESTABLISHED'),n.enabled,n.description FROM networks AS n LEFT JOIN accounts AS a ON n.user_id = a.id WHERE n.vpn_id = ?");
          $query->execute(array($_SESSION['sess_vpn_id']));
          
          while ($row = $query->fetch(PDO::FETCH_NUM))

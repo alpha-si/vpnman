@@ -99,7 +99,7 @@ class Controller
                   
                   if (!$res)
                   {
-                     $this->response['error'] = "invalid value \"$value\" for parameter \"$key\"";
+                     $this->response['error'] = "method \"$urlif_method\": invalid value \"$value\" for parameter \"$key\"";
                      break;
                   }
                }

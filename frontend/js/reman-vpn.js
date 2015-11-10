@@ -138,14 +138,14 @@ function refreshVpnListBox()
 function selectVpn()
 {
    $( "#select_vpn" ).change(function() {
-      alert("switch to vpn " + $(this).val());
+      //alert("switch to vpn " + $(this).val());
       $.ajax({
       url : 'VpnController.php?action=select&id=' + $(this).val(),
       beforeSend : function () {
-         //$('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
+         $('#busy1').activity({valign: 'top', segments: 10, steps: 3, width:5, space: 0, length: 3, color: '#000', speed: 1.5});
       },
       complete: function () {
-         //$('#busy1').activity(false);
+         $('#busy1').activity(false);
       },
       success : function (data,stato) {
          location.reload();

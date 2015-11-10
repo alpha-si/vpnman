@@ -120,6 +120,7 @@ function getwrtcfg()
    }
    
    $writer->endDocument();
+   
    return $writer->outputMemory();
 }
 
@@ -128,7 +129,7 @@ if (isset($_REQUEST['action']))
    switch ($_REQUEST['action'])
    {
       case 'getxmlcfg':
-         header('Content-Type: text/xml'); 
+         header('Content-Type: text/xml;'); 
          echo getwrtcfg();
          break;
       default:
