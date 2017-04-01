@@ -56,12 +56,11 @@
                                             <th>Username</th>
                                             <th>Start Time</th>
                                             <th>End Time</th>
+                                            <th>Length</th>
                                             <th>VPN Address</th>
                                             <th>Real Address</th>
-                                            <th>Bytes RX</th>
-                                            <th>Bytes TX</th>
-                                            <th>CID</th>
-                                            <th>KID</th>		
+                                            <th>RX (MB)</th>
+                                            <th>TX (MB)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -77,12 +76,19 @@
    {
       if ($_SESSION['sess_role'] != 'USER')
       {
-         $query = $DB->prepare("SELECT username, c.* FROM connection_history AS c, accounts AS u WHERE c.user_id = u.id AND u.vpn_id = ? ORDER BY start_time DESC, end_time");
+         $query = $DB->prepare("
+         SELECT username, c.start_time, c.end_time, TIMEDIFF(c.end_time, c.start_time) as sl, ROUND((c.bytes_received / 1048576),2) as rx, ROUND((c.bytes_sent / 1048576),2) as tx, c.trusted_ip, c.ifconfig_pool_remote_ip
+         FROM connection_history AS c, accounts AS u 
+         WHERE c.user_id = u.id AND u.vpn_id = ? 
+         ORDER BY start_time DESC, end_time LIMIT 1000");
          $query->execute(array($_SESSION['sess_vpn_id']));
       }
       else
       {
-         $query = $DB->prepare("SELECT username, c.* FROM connection_history AS c, accounts AS u WHERE c.user_id = u.id AND u.vpn_id = ? AND u.user_id = ? ORDER BY start_time DESC, end_time");
+         $query = $DB->prepare("SELECT username, , c.start_time, c.end_time, TIMEDIFF(c.end_time, c.start_time) as sl, ROUND((c.bytes_received / 1048576),2) as rx, ROUND((c.bytes_sent / 1048576),2) as tx, c.trusted_ip, c.ifconfig_pool_remote_ip
+         FROM connection_history AS c, accounts AS u 
+         WHERE c.user_id = u.id AND u.vpn_id = ? AND u.user_id = ? 
+         ORDER BY start_time DESC, end_time LIMIT 1000");
          $query->execute(array($_SESSION['sess_vpn_id'], $_SESSION['sess_user_id']));
       }
       
@@ -90,14 +96,13 @@
       {
          echo "<tr class=\"odd gradeX\">";
          echo "<td>" . $row[0] . "</td>";
+         echo "<td>" . $row[1] . "</td>";
+         echo "<td>" . $row[2] . "</td>";
          echo "<td>" . $row[3] . "</td>";
-         echo "<td>" . $row[4] . "</td>";
-         echo "<td>" . $row[9] . "</td>";
          echo "<td>" . $row[7] . "</td>";
-         echo "<td>" . $row[5] . "</td>";
          echo "<td>" . $row[6] . "</td>";
-         echo "<td>" . $row[10] . "</td>";
-         echo "<td>" . $row[11] . "</td>";
+         echo "<td>" . $row[4] . "</td>";
+         echo "<td>" . $row[5] . "</td>";
          echo "</tr>";	
       }
    }

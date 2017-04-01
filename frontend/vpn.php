@@ -71,7 +71,7 @@
 											<th>Description</th>
 											<th>Status</th>
                                  <th>Network</th>
-											<th>SrvAddress</th>
+											<th>Mask</th>
 											<th>SrvPort</th>
 											<th>MngPort</th>
 											<th>ProtoType</th>

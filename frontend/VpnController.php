@@ -793,7 +793,7 @@ class VpnController extends Controller
               );
               
       // Sign the server certificate
-      if (!($sscert = openssl_csr_sign($csr, $cacert, $caprivkey, 365, $SSLcnf)))
+      if (!($sscert = openssl_csr_sign($csr, $cacert, $caprivkey, 3650, $SSLcnf)))
       {
          $this->errstr = "[createServerKeys] server certificate sign failed"; 
          return false;
@@ -911,7 +911,7 @@ class VpnController extends Controller
               );
               
       // Sign the client certificate
-      $sscert = openssl_csr_sign($csr, $cacert, $caprivkey, 365, $SSLcnf);
+      $sscert = openssl_csr_sign($csr, $cacert, $caprivkey, 3650, $SSLcnf);
       
       if (!$sscert)
       {
@@ -1834,11 +1834,16 @@ class VpnController extends Controller
       
       if ($_SESSION['sess_role'] == 'ADMIN')
       {
-         $query = $DB->query("SELECT id,description,srv_port,mng_port,template,proto_type,auth_type,net_addr,net_mask FROM vpn");
+         $query = $DB->query("
+SELECT id,description,srv_port,mng_port,template,proto_type,auth_type,net_addr,net_mask,TIME_TO_SEC(TIMEDIFF(NOW(), value)) as alive 
+FROM vpn LEFT JOIN server_info ON vpn.id = server_info.vpn_id 
+WHERE server_info.attribute = 'keepalive'");
       }
       else
       {
-         $query = $DB->prepare("SELECT id,description,srv_port,mng_port,template,proto_type,auth_type,net_addr,net_mask,uv.role FROM vpn AS v, user2vpn AS uv WHERE v.id = uv.vpn_id AND uv.user_id = ?");
+         $query = $DB->prepare("SELECT v.id,v.description,v.srv_port,v.mng_port,v.template,v.proto_type,v.auth_type,v.net_addr,v.net_mask,uv.role,TIME_TO_SEC(TIMEDIFF(NOW(), s.value)) as alive
+FROM (vpn AS v LEFT JOIN server_info AS s ON v.id = s.vpn_id) INNER JOIN user2vpn AS uv ON id = uv.vpn_id 
+WHERE s.attribute = 'keepalive' AND uv.user_id = ?");
          $query->execute(array($_SESSION['sess_user_id']));
       }
       
@@ -1849,7 +1854,14 @@ class VpnController extends Controller
          $html .= "<tr class=\"odd gradeX\">";
          $html .= "<td>" . $row[0] . "</td>";
          $html .= "<td>" . $row[1] . "</td>";
-         $html .= "<td>" . vpnStatusIcon("") . "</td>";
+         if ($row[9] < 10)
+         {
+            $html .= "<td>" . vpnStatusIcon("ESTABLISHED") . "</td>";
+         }
+         else
+         {
+            $html .= "<td>" . vpnStatusIcon("DISCONNECTED") . "</td>";
+         }
          $html .= "<td>" . $row[7] . "</td>";
          $html .= "<td>" . $row[8] . "</td>";
          $html .= "<td>" . $row[2] . "</td>";
